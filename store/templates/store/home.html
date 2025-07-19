@@ -1,0 +1,64 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+
+{% block title %}Home - Minha Loja{% endblock %}
+
+{% block content %}
+
+<!-- BANNER CARROSSEL SWIPER -->
+<div class="w-full max-w-7xl mx-auto mt-4">
+  <div class="swiper mySwiper rounded shadow-md">
+    <div class="swiper-wrapper">
+      <!-- Slide 1 -->
+      <div class="swiper-slide">
+        <img src="{% static 'img/bannersCarrossel/banner1.png' %}" class="w-full object-cover" alt="Banner 1">
+      </div>
+      <!-- Slide 2 -->
+      <div class="swiper-slide">
+        <img src="{% static 'img/bannersCarrossel/banner2.jpg' %}" class="w-full object-cover" alt="Banner 2">
+      </div>
+      <!-- Slide 3 -->
+      <div class="swiper-slide">
+        <img src="{% static 'img/bannersCarrossel/banner3.jpg' %}" class="w-full object-cover" alt="Banner 3">
+      </div>
+    </div>
+    <div class="swiper-button-next"></div>
+    <div class="swiper-button-prev"></div>
+    <div class="swiper-pagination"></div>
+  </div>
+</div>
+
+<h1 class="text-2xl font-semibold text-gray-800 mb-4 mt-4">Produtos</h1>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8">
+  {% for produto in produtos %}
+    <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition duration-300 border border-gray-200 p-4 flex flex-col justify-between">
+      
+      <!-- Imagem -->
+      {% if produto.imagem %}
+        <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full h-48 object-contain mb-4" />
+      {% else %}
+        <img src="https://via.placeholder.com/300x200?text=Sem+Imagem" class="w-full h-48 object-contain mb-4" />
+      {% endif %}
+
+      <!-- Nome do Produto -->
+      <h2 class="text-sm font-semibold text-gray-800 leading-tight mb-1 line-clamp-2 uppercase">
+        {{ produto.nome }}
+      </h2>
+      <!-- Preço -->
+      <p class="text-xl font-bold text-[#1F2A85] mb-1">R$ {{ produto.preco }}</p>
+      <p class="text-sm text-gray-500 mb-4">Em até 1x R$ {{ produto.preco }} sem juros</p>
+
+      <!-- Botão -->
+      <a href="{% url 'produto_detail' produto.id %}" class="block w-full bg-[#FFD400] hover:bg-yellow-300 text-black font-semibold py-2 rounded-md text-center transition">
+        Ver detalhes
+      </a>
+    </div>
+  {% empty %}
+    <p>Nenhum produto cadastrado.</p>
+  {% endfor %}
+</div>
+
+
+{% endblock %}

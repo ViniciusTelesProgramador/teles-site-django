@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <title>{% block title %}Minha Loja{% endblock %}</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Bootstrap opcional -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+</head>
+
+{% if debug %}
+  <script src="http://localhost:8000/__reload__/reload.js"></script>
+{% endif %}
+
+<script>
+function atualizarValorCarrinho() {
+    fetch("{% url 'carrinho_total_ajax' %}")
+        .then(response => response.json())
+        .then(data => {
+            const valor = data.total.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            });
+            document.getElementById("valor-carrinho").textContent = valor;
+        });
+}
+atualizarValorCarrinho();
+</script>
+
+<body class="bg-gray-100 d-flex flex-column min-vh-100">
+
+<!-- HEADER SUPERIOR -->
+<!-- HEADER SUPERIOR -->
+<header class="bg-[#1F2A85] text-white">
+  <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-24">
+    
+    <!-- Logo (maior e visível) -->
+    <a href="/" class="flex items-center space-x-2">
+      <img src="{% static 'img/LOGO TELES1.png' %}" alt="Logo Teles Acabamento" class="h-20 w-auto object-contain">
+    </a>
+
+    <!-- Campo de busca -->
+    <div class="flex-1 mx-4">
+      <div class="relative">
+        <input type="text" placeholder="O que você procura?"
+               class="w-full rounded-md px-4 py-2 text-black focus:outline-none" />
+        <button class="absolute right-0 top-0 h-full px-4 bg-[#FFD400] rounded-r-md text-black hover:bg-yellow-400">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Entrar / Carrinho -->
+    <div class="flex space-x-4 text-sm items-center">
+      <a href="#" class="flex items-center gap-1 text-white hover:underline">
+        <i class="fas fa-user"></i> Entrar
+      </a>
+
+      <a href="{% url 'carrinho' %}" class="relative flex items-center gap-2 text-white hover:underline">
+        <i class="fas fa-shopping-cart text-xl"></i>
+        <span>R$ {{ valor_total_carrinho|floatformat:2 }}</span>
+        {% if quantidade_total_carrinho > 0 %}
+        <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+          {{ quantidade_total_carrinho }}
+        </span>
+        {% endif %}
+      </a>
+    </div>
+  </div>
+</header>
+
+
+<!-- MENU PRINCIPAL -->
+<nav class="bg-[#142165] text-white">
+  <div class="max-w-7xl mx-auto px-4">
+    <ul class="flex space-x-6 py-3 text-sm font-medium">
+      <li class="relative group">
+        <a href="#" class="flex items-center gap-1 hover:underline">
+          CATEGORIAS <i class="fas fa-chevron-down text-xs"></i>
+        </a>
+        <ul class="absolute left-0 mt-2 bg-white text-black rounded shadow-lg z-50 w-64 hidden group-hover:block transition duration-200">
+          {% for categoria in categorias %}
+            <li>
+              <a href="{% url 'produtos_por_categoria' categoria.id %}" class="block px-4 py-2 hover:bg-gray-200">
+                {{ categoria.nome }}
+              </a>
+            </li>
+          {% empty %}
+            <li class="px-4 py-2 text-gray-500">Nenhuma categoria cadastrada</li>
+          {% endfor %}
+        </ul>
+      </li>
+      <li><a href="#" class="hover:text-[#FFD400]">CONTATO</a></li>
+      <li><a href="{% url 'nossas_lojas' %}" class="hover:text-[#FFD400]">NOSSAS LOJAS</a></li>
+      <li><a href="#" class="hover:text-[#FFD400]">OFERTAS</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- CONTEÚDO -->
+<main class="container my-4 flex-grow-1">
+    {% block content %}
+    {% endblock %}
+</main>
+
+<!-- RODAPÉ -->
+<footer class="bg-dark text-white mt-auto py-3">
+    <div class="container text-center">
+        &copy; {{ now.year }} Teles Construções - Todos os direitos reservados
+    </div>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Botão flutuante WhatsApp -->
+<a href="https://wa.me/5598999999999?text=Olá!%20Gostaria%20de%20atendimento."
+   target="_blank"
+   rel="noopener noreferrer"
+   class="fixed bottom-4 right-4 z-50 bg-green-500 hover:opacity-80 text-white rounded-full shadow-lg p-4 transition-opacity duration-200"
+   title="Fale conosco no WhatsApp">
+    <i class="fab fa-whatsapp fa-2x"></i>
+</a>
+
+<!-- Swiper JS -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+
+<!-- Swiper Init -->
+<script>
+  var swiper = new Swiper(".mySwiper", {
+    loop: true,
+    autoplay: {
+      delay: 4000,
+      disableOnInteraction: false,
+    },
+    pagination: {
+      el: ".swiper-pagination",
+      clickable: true,
+    },
+    navigation: {
+      nextEl: ".swiper-button-next",
+      prevEl: ".swiper-button-prev",
+    },
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Checkout - Minha Loja{% endblock %}
+
+{% block content %}
+<h1>Checkout</h1>
+
+<h4>Resumo do Carrinho:</h4>
+<ul>
+    {% for produto_id, item in carrinho.items %}
+        <li>{{ item.nome }} - R$ {{ item.preco }} x {{ item.quantidade }}</li>
+    {% endfor %}
+</ul>
+<h4>Frete: R$ {{ frete }}</h4>
+<h4>Total: R$ {{ total }}</h4>
+
+<form method="post" class="mt-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Finalizar Pedido</button>
+</form>
+
+<a href="{% url 'carrinho' %}" class="btn btn-secondary mt-2">Voltar ao carrinho</a>
+{% endblock %}
