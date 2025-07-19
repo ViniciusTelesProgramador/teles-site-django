@@ -19,9 +19,9 @@ Foi criado com foco em desempenho, usabilidade e facilidade de manutenção.
 
 Antes de iniciar, você precisa ter instalado:
 
-- Python 3.11 ou superior
-- Git
-- Pip (gerenciador de pacotes do Python)
+- Python 3.11 ou superior  
+- Git  
+- Pip (gerenciador de pacotes do Python)  
 - (Opcional) Node.js e NPM — apenas se for compilar o Tailwind localmente
 
 ---
@@ -31,70 +31,64 @@ Antes de iniciar, você precisa ter instalado:
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/SEU-USUARIO/teles-site.git
-cd teles-site
-2. Crie o ambiente virtual
-bash
-Copiar
-Editar
+git clone https://github.com/ViniciusTelesProgramador/teles-site-django.git
+cd teles-site-django
+```
+
+### 2. Crie o ambiente virtual
+
+```bash
 python -m venv venv
-3. Ative o ambiente virtual
-No Windows:
+```
 
-bash
-Copiar
-Editar
+### 3. Ative o ambiente virtual
+```bash
 venv\Scripts\activate
-No Linux / Mac:
+```
 
-bash
-Copiar
-Editar
-source venv/bin/activate
-4. Instale as dependências
-bash
-Copiar
-Editar
+### 4. Instale as dependências
+
+```bash
 pip install -r requirements.txt
-Se o arquivo requirements.txt ainda não existir, você pode criar com:
+```
+Se o arquivo requirements.txt ainda não existir:
 
-bash
-Copiar
-Editar
+```bash
 pip freeze > requirements.txt
-🛠️ Rodando o servidor
-bash
-Copiar
-Editar
+```
+
+##🛠️ Rodando o servidor
+
+```bash
 python manage.py migrate
 python manage.py runserver
+```
 Acesse no navegador:
 http://127.0.0.1:8000
 
-📦 Compilando Tailwind CSS (opcional)
+##📦 Compilando Tailwind CSS (opcional)
 Se estiver usando Tailwind via Node.js:
 
-bash
-Copiar
-Editar
+```bash
 npm install
 npx tailwindcss -i ./static/src/input.css -o ./static/css/styles.css --watch
+```
 Se estiver usando Tailwind já compilado (via CDN), ignore essa etapa.
 
-👤 Usuário Admin (opcional)
-Crie um superusuário para acessar o painel administrativo:
+##👤 Usuário Admin (opcional)
 
-bash
-Copiar
-Editar
+Crie um superusuário para acessar o painel administrativo:
+```bash
 python manage.py createsuperuser
+```
+
 Acesse: http://127.0.0.1:8000/admin
 
-📂 Estrutura básica do projeto
-csharp
-Copiar
-Editar
-teles-site/
+
+##📂 Estrutura básica do projeto
+
+```csharp
+teles-site-django/
 │
 ├── app/                  # App principal Django
 ├── static/               # Arquivos estáticos (CSS, imagens, JS)
@@ -102,15 +96,16 @@ teles-site/
 ├── manage.py
 ├── requirements.txt
 └── README.md
-📌 Observações
+```
+
+##📌 Observações
 O banco padrão usado é o SQLite, simples e funcional para desenvolvimento.
 
 Você pode modificar o settings.py para usar outro banco, como PostgreSQL.
 
-📬 Contato
-Desenvolvido por Seu Nome Aqui
-Se quiser contribuir ou tiver dúvidas, fique à vontade para abrir uma issue ou fazer um fork.
 
-javascript
-Copiar
-Editar
+
+
+
+
+
