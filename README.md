@@ -57,7 +57,7 @@ Se o arquivo requirements.txt ainda não existir:
 pip freeze > requirements.txt
 ```
 
-##🛠️ Rodando o servidor
+## 🛠️ Rodando o servidor
 
 ```bash
 python manage.py migrate
@@ -66,7 +66,7 @@ python manage.py runserver
 Acesse no navegador:
 http://127.0.0.1:8000
 
-##📦 Compilando Tailwind CSS (opcional)
+## 📦 Compilando Tailwind CSS (opcional)
 Se estiver usando Tailwind via Node.js:
 
 ```bash
@@ -75,7 +75,7 @@ npx tailwindcss -i ./static/src/input.css -o ./static/css/styles.css --watch
 ```
 Se estiver usando Tailwind já compilado (via CDN), ignore essa etapa.
 
-##👤 Usuário Admin (opcional)
+# #👤 Usuário Admin (opcional)
 
 Crie um superusuário para acessar o painel administrativo:
 ```bash
@@ -85,7 +85,7 @@ python manage.py createsuperuser
 Acesse: http://127.0.0.1:8000/admin
 
 
-##📂 Estrutura básica do projeto
+## 📂 Estrutura básica do projeto
 
 ```csharp
 teles-site-django/
@@ -98,7 +98,7 @@ teles-site-django/
 └── README.md
 ```
 
-##📌 Observações
+## 📌 Observações
 O banco padrão usado é o SQLite, simples e funcional para desenvolvimento.
 
 Você pode modificar o settings.py para usar outro banco, como PostgreSQL.
