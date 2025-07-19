@@ -10,7 +10,7 @@ Foi criado com foco em desempenho, usabilidade e facilidade de manutenção.
 - [Python 3.11+](https://www.python.org)
 - [Django 4.x](https://www.djangoproject.com/)
 - [Tailwind CSS](https://tailwindcss.com/)
-- [SQLite3] (banco de dados padrão do Django)
+- [SQLite3](https://www.sqlite.org/index.html) (banco de dados padrão do Django)
 - HTML + Jinja (Templates)
 
 ---
@@ -34,50 +34,66 @@ Antes de iniciar, você precisa ter instalado:
 git clone https://github.com/SEU-USUARIO/teles-site.git
 cd teles-site
 2. Crie o ambiente virtual
-
+bash
+Copiar
+Editar
 python -m venv venv
 3. Ative o ambiente virtual
 No Windows:
 
-
+bash
+Copiar
+Editar
 venv\Scripts\activate
 No Linux / Mac:
 
-
+bash
+Copiar
+Editar
 source venv/bin/activate
 4. Instale as dependências
-
+bash
+Copiar
+Editar
 pip install -r requirements.txt
 Se o arquivo requirements.txt ainda não existir, você pode criar com:
 
-
+bash
+Copiar
+Editar
 pip freeze > requirements.txt
 🛠️ Rodando o servidor
-Com o ambiente virtual ativado e dependências instaladas:
-
-
+bash
+Copiar
+Editar
 python manage.py migrate
 python manage.py runserver
 Acesse no navegador:
-http://127.0.0.1:8000/
+http://127.0.0.1:8000
 
 📦 Compilando Tailwind CSS (opcional)
-Se estiver usando Tailwind via Node:
+Se estiver usando Tailwind via Node.js:
 
-
+bash
+Copiar
+Editar
 npm install
 npx tailwindcss -i ./static/src/input.css -o ./static/css/styles.css --watch
-Se você estiver usando Tailwind já compilado (sem Node), pode ignorar essa etapa.
+Se estiver usando Tailwind já compilado (via CDN), ignore essa etapa.
 
 👤 Usuário Admin (opcional)
-Crie um superusuário para acessar o painel admin do Django:
+Crie um superusuário para acessar o painel administrativo:
 
-
+bash
+Copiar
+Editar
 python manage.py createsuperuser
 Acesse: http://127.0.0.1:8000/admin
 
 📂 Estrutura básica do projeto
-
+csharp
+Copiar
+Editar
 teles-site/
 │
 ├── app/                  # App principal Django
@@ -87,10 +103,14 @@ teles-site/
 ├── requirements.txt
 └── README.md
 📌 Observações
-O banco padrão usado é o SQLite, simples e já funcional para desenvolvimento.
+O banco padrão usado é o SQLite, simples e funcional para desenvolvimento.
 
 Você pode modificar o settings.py para usar outro banco, como PostgreSQL.
 
 📬 Contato
-Desenvolvido por Seu Nome Aqui.
+Desenvolvido por Seu Nome Aqui
 Se quiser contribuir ou tiver dúvidas, fique à vontade para abrir uma issue ou fazer um fork.
+
+javascript
+Copiar
+Editar
