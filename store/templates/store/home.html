@@ -1,7 +1,6 @@
 {% extends 'store/base.html' %}
 {% load static %}
 
-
 {% block title %}Home - Minha Loja{% endblock %}
 
 {% block content %}
@@ -16,7 +15,7 @@
       </div>
       <!-- Slide 2 -->
       <div class="swiper-slide">
-        <img src="{% static 'img/bannersCarrossel/banner2.jpg' %}" class="w-full object-cover" alt="Banner 2">
+        <img src="{% static 'img/bannersCarrossel/banner2.png' %}" class="w-full object-cover" alt="Banner 2">
       </div>
       <!-- Slide 3 -->
       <div class="swiper-slide">
@@ -28,6 +27,28 @@
     <div class="swiper-pagination"></div>
   </div>
 </div>
+
+<!-- SLIDE DE CATEGORIAS -->
+<!-- SLIDE DE CATEGORIAS -->
+<section class="my-6 px-4 max-w-7xl mx-auto">
+  <div class="swiper categoriasSwiper">
+    <div class="swiper-wrapper">
+      {% for categoria in categorias %}
+      <a href="{% url 'produtos_por_categoria' categoria.id %}" class="swiper-slide flex flex-col items-center space-y-2 hover:opacity-90 transition">
+        <div class="w-20 h-20 rounded-full bg-green-700 flex items-center justify-center overflow-hidden">
+          {% if categoria.icone %}
+            <img src="{{ categoria.icone.url }}" alt="{{ categoria.nome }}" class="w-full h-full object-contain">
+          {% else %}
+            <img src="{% static 'img/icones/default.png' %}" alt="Categoria sem imagem" class="w-full h-full object-contain">
+          {% endif %}
+        </div>
+        <p class="text-center text-sm text-gray-800">{{ categoria.nome }}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
 
 <h1 class="text-2xl font-semibold text-gray-800 mb-4 mt-4">Produtos</h1>
 
@@ -59,6 +80,5 @@
     <p>Nenhum produto cadastrado.</p>
   {% endfor %}
 </div>
-
 
 {% endblock %}

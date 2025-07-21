@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.http import JsonResponse
 from .models import Categoria
 from django.shortcuts import render
+from .models import Produto, Categoria
 
 def home(request):
     produtos = Produto.objects.all()
@@ -190,3 +191,13 @@ def nossas_lojas(request):
         }
     ]
     return render(request, 'store/nossas_lojas.html', {'lojas': lojas})
+
+
+
+def home(request):
+    produtos = Produto.objects.all()
+    categorias = Categoria.objects.all()
+    return render(request, 'store/home.html', {
+        'produtos': produtos,
+        'categorias': categorias
+    })

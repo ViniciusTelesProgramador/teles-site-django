@@ -154,5 +154,19 @@ atualizarValorCarrinho();
   });
 </script>
 
+<!-- Swiper (se já tiver no banner, não precisa repetir) -->
+<script>
+  new Swiper(".categoriasSwiper", {
+    slidesPerView: 4,
+    spaceBetween: 20,
+    breakpoints: {
+      640: { slidesPerView: 5 },
+      768: { slidesPerView: 6 },
+      1024: { slidesPerView: 8 },
+    },
+  });
+</script>
+
+
 </body>
 </html>
