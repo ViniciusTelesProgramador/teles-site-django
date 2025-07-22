@@ -62,9 +62,15 @@ atualizarValorCarrinho();
 
     <!-- Entrar / Carrinho -->
     <div class="flex space-x-4 text-sm items-center">
-      <a href="#" class="flex items-center gap-1 text-white hover:underline">
+    {% if user.is_authenticated %}
+      <span class="text-white mr-2">👋 {{ user.first_name|default:user.username }}</span>
+      <a href="{% url 'logout' %}" class="text-white hover:underline">Sair</a>
+    {% else %}
+      <a href="{% url 'login' %}" class="flex items-center gap-1 text-white hover:underline">
         <i class="fas fa-user"></i> Entrar
       </a>
+    {% endif %}
+
 
       <a href="{% url 'carrinho' %}" class="relative flex items-center gap-2 text-white hover:underline">
         <i class="fas fa-shopping-cart text-xl"></i>

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'tailwind',
     'theme.apps.ThemeConfig',  
     'django_browser_reload',
+     'widget_tweaks',
     
 ]
 

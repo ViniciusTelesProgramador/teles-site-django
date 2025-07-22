@@ -7,6 +7,10 @@ from django.http import JsonResponse
 from .models import Categoria
 from django.shortcuts import render
 from .models import Produto, Categoria
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+from django.shortcuts import redirect
+from django.contrib import messages
 
 def home(request):
     produtos = Produto.objects.all()
@@ -21,27 +25,35 @@ def produto_detail(request, produto_id):
 def adicionar_carrinho(request, produto_id):
     produto = get_object_or_404(Produto, id=produto_id)
 
-    # pega carrinho da sessão ou cria vazio
+    # Pega carrinho da sessão ou cria vazio
     carrinho = request.session.get('carrinho', {})
 
+    # Obtém a quantidade enviada pelo formulário
+    quantidade = int(request.POST.get('quantidade', 1))
+
     if str(produto_id) in carrinho:
-        carrinho[str(produto_id)]['quantidade'] += 1
+        carrinho[str(produto_id)]['quantidade'] += quantidade
     else:
         carrinho[str(produto_id)] = {
             'nome': produto.nome,
             'preco': float(produto.preco),
-            'quantidade': 1
+            'quantidade': quantidade
         }
 
-    # salva carrinho de volta na sessão
     request.session['carrinho'] = carrinho
-
     return HttpResponseRedirect(reverse('carrinho'))
+
 
 
 def carrinho(request):
     carrinho = request.session.get('carrinho', {})
-    total = sum(item['preco'] * item['quantidade'] for item in carrinho.values())
+    total = 0
+
+    # Vamos calcular o subtotal de cada item e atualizar no dicionário
+    for item in carrinho.values():
+        item['subtotal'] = item['preco'] * item['quantidade']
+        total += item['subtotal']
+
     return render(request, 'store/carrinho.html', {'carrinho': carrinho, 'total': total})
 
 
@@ -76,7 +88,10 @@ def checkout(request):
         else:
             frete = 40.00
 
-        total = sum(item['preco'] * item['quantidade'] for item in carrinho.values())
+        # Salva uma cópia segura do carrinho
+        carrinho_original = carrinho.copy()
+
+        total = sum(item['preco'] * item['quantidade'] for item in carrinho_original.values())
         total += frete
 
         form = CheckoutForm(request.POST)
@@ -85,37 +100,50 @@ def checkout(request):
             pedido.total = total
             pedido.save()
 
-            for produto_id, item in carrinho.items():
+            # Agora usamos a cópia garantida
+            for produto_id, item in carrinho_original.items():
                 PedidoItem.objects.create(
                     pedido=pedido,
                     produto_nome=item['nome'],
                     preco=item['preco'],
                     quantidade=item['quantidade']
                 )
+
+            # Limpa o carrinho apenas depois
             request.session['carrinho'] = {}
-            return render(request, 'store/checkout_sucesso.html', {'pedido': pedido, 'frete': frete})
+
+            return render(request, 'store/checkout_sucesso.html', {
+                'pedido': pedido,
+                'frete': frete
+            })
     else:
         form = CheckoutForm()
         total = sum(item['preco'] * item['quantidade'] for item in carrinho.values())
 
-    return render(request, 'store/checkout.html', {'form': form, 'carrinho': carrinho, 'total': total, 'frete': frete})
+    return render(request, 'store/checkout.html', {
+        'form': form,
+        'carrinho': carrinho,
+        'total': total,
+        'frete': frete
+    })
 
 
 def atualizar_carrinho(request):
     if request.method == 'POST':
         carrinho = request.session.get('carrinho', {})
 
-        for produto_id in carrinho.keys():
-            campo_nome = f"quantidade_{produto_id}"
-            nova_qtd = int(request.POST.get(campo_nome, 1))
-            if nova_qtd > 0:
-                carrinho[produto_id]['quantidade'] = nova_qtd
-            else:
-                del carrinho[produto_id]
+        for key in request.POST:
+            if key.startswith('quantidade_'):
+                produto_id = key.split('_')[1]
+                nova_qtd = int(request.POST.get(key, 1))
+                if produto_id in carrinho:
+                    if nova_qtd > 0:
+                        carrinho[produto_id]['quantidade'] = nova_qtd
+                    else:
+                        del carrinho[produto_id]
 
         request.session['carrinho'] = carrinho
-
-    return HttpResponseRedirect(reverse('carrinho'))
+        return HttpResponseRedirect(reverse('carrinho'))
 
 
 
@@ -201,3 +229,44 @@ def home(request):
         'produtos': produtos,
         'categorias': categorias
     })
+
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        senha = request.POST.get('password')
+        user = authenticate(request, username=username, password=senha)
+        if user is not None:
+            login(request, user)
+            messages.success(request, 'Login realizado com sucesso.')
+            return redirect('home')
+        else:
+            messages.error(request, 'Usuário ou senha inválidos.')
+    return render(request, 'store/login.html')
+
+
+def logout_view(request):
+    logout(request)
+    messages.info(request, 'Você saiu da sua conta.')
+    return redirect('home')
+
+
+def register_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        senha = request.POST.get('password')
+        senha2 = request.POST.get('password2')
+
+        if senha != senha2:
+            messages.error(request, 'As senhas não coincidem.')
+        elif User.objects.filter(username=username).exists():
+            messages.error(request, 'Nome de usuário já está em uso.')
+        elif User.objects.filter(email=email).exists():
+            messages.error(request, 'E-mail já cadastrado.')
+        else:
+            user = User.objects.create_user(username=username, email=email, password=senha)
+            user.save()
+            messages.success(request, 'Cadastro realizado com sucesso. Faça login.')
+            return redirect('login')
+
+    return render(request, 'store/register.html')

@@ -12,6 +12,9 @@ urlpatterns = [
     path('api/carrinho-total/', views.carrinho_total_ajax, name='carrinho_total_ajax'),
     path('categoria/<int:categoria_id>/', views.produtos_por_categoria, name='produtos_por_categoria'),
     path('nossaslojas/', views.nossas_lojas, name='nossas_lojas'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('register/', views.register_view, name='register'),
 
 
 
