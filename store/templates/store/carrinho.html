@@ -4,6 +4,17 @@
 {% block title %}Carrinho de Compras - Teles{% endblock %}
 
 {% block content %}
+<style>
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+</style>
+
 <div class="max-w-7xl mx-auto px-4 py-12">
   <h1 class="text-2xl font-bold text-gray-800 mb-6">🛒 Carrinho de Compras</h1>
 
@@ -27,14 +38,25 @@
             <td class="px-6 py-4 font-medium text-gray-800">{{ item.nome }}</td>
             <td class="px-6 py-4 text-green-700 font-semibold">R$ {{ item.preco }}</td>
             <td class="px-6 py-4">
-              <input 
-                type="number"
-                name="quantidade_{{ produto_id }}"
-                value="{{ item.quantidade }}"
-                min="1"
-                class="w-16 border rounded-md px-2 py-1 text-center quantidade-input"
-                data-produto-id="{{ produto_id }}"
-              >
+              <div class="flex items-center gap-2">
+                <button type="button"
+                  class="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                  onclick="alterarQuantidade('{{ produto_id }}', -1)">-</button>
+
+                <input 
+                  type="number"
+                  id="quantidade_{{ produto_id }}"
+                  name="quantidade_{{ produto_id }}"
+                  value="{{ item.quantidade }}"
+                  min="1"
+                  class="w-14 border rounded-md px-2 py-1 text-center"
+                  data-produto-id="{{ produto_id }}"
+                >
+
+                <button type="button"
+                  class="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                  onclick="alterarQuantidade('{{ produto_id }}', 1)">+</button>
+              </div>
             </td>
             <td class="px-6 py-4 text-gray-800 font-medium">
               R$ {{ item.preco }} x {{ item.quantidade }} = R$ {{ item.subtotal|floatformat:2 }}
@@ -60,33 +82,37 @@
       </div>
     </div>
   </form>
+
   {% else %}
   <div class="bg-yellow-100 text-yellow-800 p-6 rounded-lg border border-yellow-300 shadow">
     Seu carrinho está vazio.
   </div>
   {% endif %}
 </div>
+
 <script>
-document.querySelectorAll('.quantidade-input').forEach(input => {
-  input.addEventListener('change', function () {
-    const produtoId = this.dataset.produtoId;
-    const quantidade = this.value;
+function alterarQuantidade(produtoId, delta) {
+  const input = document.getElementById(`quantidade_${produtoId}`);
+  let valor = parseInt(input.value) || 1;
+  valor += delta;
+  if (valor < 1) valor = 1;
+  input.value = valor;
 
-    fetch("{% url 'atualizar_carrinho' %}", {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': '{{ csrf_token }}',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `quantidade_${produtoId}=${quantidade}`
-    })
-    .then(response => {
-      if (response.redirected) {
-        window.location.href = response.url;  // recarrega a página com valores atualizados
-      }
-    });
+  const csrfToken = '{{ csrf_token }}';
+
+  fetch("{% url 'atualizar_carrinho' %}", {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `quantidade_${produtoId}=${valor}`
+  })
+  .then(response => {
+    if (response.redirected) {
+      window.location.href = response.url; // recarrega página
+    }
   });
-});
+}
 </script>
-
 {% endblock %}

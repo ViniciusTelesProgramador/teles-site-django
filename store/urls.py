@@ -15,7 +15,11 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('register/', views.register_view, name='register'),
-
-
+    path('buscar/', views.buscar_produtos, name='buscar_produtos'),
+    path('contato/', views.contato, name='contato'),
+    path('faq/', views.faq, name='faq'),
+    path('politica-de-privacidade/', views.politica_privacidade, name='politica_privacidade'),
+    path('termos-de-uso/', views.termos_uso, name='termos_uso'),
+    path('ofertas/', views.ofertas, name='ofertas'),
 
 ]

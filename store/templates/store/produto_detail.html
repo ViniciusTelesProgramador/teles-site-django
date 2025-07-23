@@ -4,12 +4,21 @@
 {% block title %}{{ produto.nome }} - Teles{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 py-10">
+<style>
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+</style>
 
-  <!-- Container -->
+<div class="max-w-7xl mx-auto px-4 py-10">
   <div class="bg-white grid grid-cols-1 md:grid-cols-2 gap-10 p-6 rounded-xl shadow-lg border border-gray-200">
 
-    <!-- Imagem do Produto -->
+    <!-- Imagem -->
     <div class="flex items-center justify-center">
       {% if produto.imagem %}
         <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full max-w-md h-auto object-contain rounded-lg">
@@ -18,39 +27,38 @@
       {% endif %}
     </div>
 
-    <!-- Informações do Produto -->
+    <!-- Info -->
     <div class="flex flex-col justify-between space-y-6">
-      
-      <!-- Nome e Preço -->
       <div>
         <h1 class="text-3xl font-bold text-[#1F2A85] mb-2">{{ produto.nome }}</h1>
         <p class="text-2xl font-semibold text-green-700 mb-1">R$ {{ produto.preco }}</p>
         <p class="text-sm text-gray-500">Em até 1x de R$ {{ produto.preco }} sem juros</p>
       </div>
 
-      <!-- Descrição -->
       <div>
         <h2 class="text-sm font-semibold text-gray-700 mb-1">Descrição:</h2>
         <p class="text-gray-800 text-base leading-relaxed">{{ produto.descricao }}</p>
       </div>
-      
 
-      <!-- Ações -->
+      <!-- Formulário -->
       <div class="flex space-x-4">
         <form action="{% url 'adicionar_carrinho' produto.id %}" method="post" class="flex flex-col sm:flex-row sm:items-center gap-4">
-        {% csrf_token %}
+          {% csrf_token %}
 
-        <!-- Campo de quantidade -->
-        <div class="flex items-center space-x-2">
-            <label for="quantidade" class="text-sm font-medium text-gray-700">Qtd:</label>
-            <input type="number" name="quantidade" id="quantidade" value="1" min="1"
-                class="w-20 border rounded-md px-2 py-1 text-center focus:outline-none focus:ring focus:border-blue-300">
-        </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="btn-menos"
+              class="bg-gray-200 px-3 py-1 rounded text-xl hover:bg-gray-300">-</button>
 
-        <!-- Botão de adicionar -->
-        <button type="submit" class="bg-[#FFD400] hover:bg-yellow-300 text-black font-bold py-2 px-6 rounded-md shadow transition">
+            <input type="number" id="quantidade" name="quantidade" min="1" value="1"
+              class="w-16 text-center border border-gray-300 rounded py-1">
+
+            <button type="button" id="btn-mais"
+              class="bg-gray-200 px-3 py-1 rounded text-xl hover:bg-gray-300">+</button>
+          </div>
+
+          <button type="submit" class="bg-[#FFD400] hover:bg-yellow-300 text-black font-bold py-2 px-6 rounded-md shadow transition">
             Adicionar ao carrinho
-        </button>
+          </button>
         </form>
 
         <a href="{% url 'home' %}" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-md shadow transition">
@@ -61,4 +69,22 @@
     </div>
   </div>
 </div>
+
+<!-- Script deve estar dentro do block content -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const btnMais = document.getElementById('btn-mais');
+    const btnMenos = document.getElementById('btn-menos');
+    const inputQtd = document.getElementById('quantidade');
+
+    btnMais.addEventListener('click', () => {
+      inputQtd.value = parseInt(inputQtd.value || 1) + 1;
+    });
+
+    btnMenos.addEventListener('click', () => {
+      let valor = parseInt(inputQtd.value || 1);
+      if (valor > 1) inputQtd.value = valor - 1;
+    });
+  });
+</script>
 {% endblock %}

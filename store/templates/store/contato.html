@@ -1,0 +1,19 @@
+{% extends 'store/base.html' %}
+{% block title %}Contato - Teles{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12 px-4">
+  <h1 class="text-2xl font-bold text-gray-800 mb-6">Entre em Contato</h1>
+  <p class="text-gray-600 mb-4">Para dúvidas, sugestões ou reclamações, preencha o formulário abaixo:</p>
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <input type="text" name="nome" placeholder="Seu nome" class="w-full border px-4 py-2 rounded">
+    <input type="email" name="email" placeholder="Seu e-mail" class="w-full border px-4 py-2 rounded">
+    <textarea name="mensagem" placeholder="Sua mensagem" rows="5" class="w-full border px-4 py-2 rounded"></textarea>
+    <button type="submit" class="bg-[#FFD400] text-black font-bold px-6 py-2 rounded shadow hover:bg-yellow-300">
+      Enviar
+    </button>
+  </form>
+</div>
+{% endblock %}

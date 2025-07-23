@@ -49,16 +49,18 @@ atualizarValorCarrinho();
       <img src="{% static 'img/LOGO TELES1.png' %}" alt="Logo Teles Acabamento" class="h-20 w-auto object-contain">
     </a>
 
-    <!-- Campo de busca -->
-    <div class="flex-1 mx-4">
-      <div class="relative">
-        <input type="text" placeholder="O que você procura?"
-               class="w-full rounded-md px-4 py-2 text-black focus:outline-none" />
-        <button class="absolute right-0 top-0 h-full px-4 bg-[#FFD400] rounded-r-md text-black hover:bg-yellow-400">
-          <i class="fas fa-search"></i>
-        </button>
-      </div>
-    </div>
+<!-- Campo de busca funcional -->
+<div class="flex-1 mx-4">
+  <form method="GET" action="{% url 'buscar_produtos' %}" class="relative">
+    <input type="text" name="q" placeholder="O que você procura?"
+           class="w-full rounded-md px-4 py-2 text-black focus:outline-none" required>
+    <button type="submit"
+            class="absolute right-0 top-0 h-full px-4 bg-[#FFD400] rounded-r-md text-black hover:bg-yellow-400">
+      <i class="fas fa-search"></i>
+    </button>
+  </form>
+</div>
+
 
     <!-- Entrar / Carrinho -->
     <div class="flex space-x-4 text-sm items-center">
@@ -91,24 +93,44 @@ atualizarValorCarrinho();
   <div class="max-w-7xl mx-auto px-4">
     <ul class="flex space-x-6 py-3 text-sm font-medium">
       <li class="relative group">
-        <a href="#" class="flex items-center gap-1 hover:underline">
-          CATEGORIAS <i class="fas fa-chevron-down text-xs"></i>
+  <a href="#" class="flex items-center gap-1 {% if request.path|slice:":10" == "/categoria" %}text-[#FFD400]{% endif %} hover:text-[#FFD400]">
+    CATEGORIAS <i class="fas fa-chevron-down text-xs"></i>
+  </a>
+  <ul class="absolute left-0 mt-3 bg-white text-black rounded-xl shadow-lg z-50 w-60 hidden group-hover:block transition duration-200 border border-gray-200 overflow-hidden">
+    {% for categoria in categorias %}
+      <li>
+        <a href="{% url 'produtos_por_categoria' categoria.id %}"
+           class="block px-4 py-3 text-sm hover:bg-[#f8f8f8] hover:text-[#1F2A85] transition-colors duration-200">
+          {{ categoria.nome }}
+        </a>
+      </li>
+    {% empty %}
+      <li class="px-4 py-3 text-gray-500 text-sm">Nenhuma categoria cadastrada</li>
+    {% endfor %}
+  </ul>
+</li>
+
+      <li class="relative group">
+        <a href="#" class="flex items-center gap-1 hover:text-[#FFD400]">
+          CONTATO <i class="fas fa-chevron-down text-xs"></i>
         </a>
         <ul class="absolute left-0 mt-2 bg-white text-black rounded shadow-lg z-50 w-64 hidden group-hover:block transition duration-200">
-          {% for categoria in categorias %}
-            <li>
-              <a href="{% url 'produtos_por_categoria' categoria.id %}" class="block px-4 py-2 hover:bg-gray-200">
-                {{ categoria.nome }}
-              </a>
-            </li>
-          {% empty %}
-            <li class="px-4 py-2 text-gray-500">Nenhuma categoria cadastrada</li>
-          {% endfor %}
+          <li>
+            <a href="{% url 'contato' %}" class="block px-4 py-2 hover:bg-gray-200">Contato</a>
+          </li>
+          <li>
+            <a href="{% url 'faq' %}" class="block px-4 py-2 hover:bg-gray-200">Perguntas Frequentes</a>
+          </li>
+          <li>
+            <a href="{% url 'politica_privacidade' %}" class="block px-4 py-2 hover:bg-gray-200">Política de Privacidade</a>
+          </li>
+          <li>
+            <a href="{% url 'termos_uso' %}" class="block px-4 py-2 hover:bg-gray-200">Termos de Uso</a>
+          </li>
         </ul>
       </li>
-      <li><a href="#" class="hover:text-[#FFD400]">CONTATO</a></li>
       <li><a href="{% url 'nossas_lojas' %}" class="hover:text-[#FFD400]">NOSSAS LOJAS</a></li>
-      <li><a href="#" class="hover:text-[#FFD400]">OFERTAS</a></li>
+      <li><a href="{% url 'ofertas' %}" class="hover:text-[#FFD400]">OFERTAS</a></li>
     </ul>
   </div>
 </nav>
@@ -120,11 +142,55 @@ atualizarValorCarrinho();
 </main>
 
 <!-- RODAPÉ -->
-<footer class="bg-dark text-white mt-auto py-3">
-    <div class="container text-center">
-        &copy; {{ now.year }} Teles Construções - Todos os direitos reservados
+<!-- NOVO RODAPÉ MODERNO -->
+<footer class="bg-[#0B0736] text-white pt-10 pb-4 mt-16">
+  <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 text-sm">
+    
+    <!-- LOGO -->
+    <div class="flex flex-col items-start">
+      <img src="{% static 'img/LOGO TELES1.png' %}" alt="Logo Teles" class="h-14 mb-2">
     </div>
+
+    <!-- POLÍTICAS -->
+    <div>
+      <h4 class="text-[#FFD400] font-semibold mb-2">Políticas</h4>
+      <ul class="space-y-1">
+        <li><a href="{% url 'politica_privacidade' %}" class="hover:underline">Política de Privacidade</a></li>
+        <li><a href="{% url 'termos_uso' %}" class="hover:underline">Termos de Uso</a></li>
+      </ul>
+    </div>
+
+    <!-- ATENDIMENTO -->
+    <div>
+      <h4 class="text-[#FFD400] font-semibold mb-2">Atendimento</h4>
+      <ul class="space-y-1">
+        <li><a href="{% url 'contato' %}" class="hover:underline">Contato</a></li>
+        <li><a href="{% url 'faq' %}" class="hover:underline">Perguntas Frequentes</a></li>
+      </ul>
+    </div>
+
+    <!-- FORMAS DE PAGAMENTO -->
+    <div class="flex space-x-2 mt-3">
+      <img src="{% static 'img/icones/visa.png' %}" alt="Visa" class="h-5">
+      <img src="{% static 'img/icones/master.png' %}" alt="Master" class="h-5">
+      <img src="{% static 'img/icones/elo.png' %}" alt="Elo" class="h-5">
+      <img src="{% static 'img/icones/credishop.png' %}" alt="Credishop" class="h-5">
+      <img src="{% static 'img/icones/pix.png' %}" alt="Pix" class="h-5">
+    </div>
+  </div>
+
+  <!-- BARRA FINAL -->
+  <div class="border-t border-gray-700 mt-6 pt-4 text-center text-xs">
+    <p>Teles Construções - O Leão dos preços baixos - CNPJ 00.464.497/0001-07</p>
+    <p>Avenida Guexenduba, 1506 - Bairro de Fátima, São Luís - MA, 65015-560</p>
+    <div class="flex justify-center space-x-4 mt-2">
+      <a href="https://www.facebook.com/Teles.acabamentos" class="hover:text-[#FFD400]"><i class="fab fa-facebook"></i></a>
+      <a href="https://www.instagram.com/telesacabamento/" class="hover:text-[#FFD400]"><i class="fab fa-instagram"></i></a>
+    </div>
+  </div>
 </footer>
+
+
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

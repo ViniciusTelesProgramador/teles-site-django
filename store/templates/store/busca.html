@@ -1,0 +1,25 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Busca por "{{ query }}"{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-semibold mb-4">Resultados para "{{ query }}"</h1>
+
+  {% if resultados %}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+      {% for produto in resultados %}
+        <div class="bg-white shadow rounded-lg p-4">
+          <a href="{% url 'produto_detail' produto.id %}">
+            <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full h-40 object-contain mb-2">
+            <h2 class="text-sm font-semibold text-gray-800">{{ produto.nome }}</h2>
+            <p class="text-blue-600 font-bold">R$ {{ produto.preco|floatformat:2 }}</p>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-gray-500">Nenhum produto encontrado com esse termo.</p>
+  {% endif %}
+</div>
+{% endblock %}

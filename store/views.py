@@ -270,3 +270,39 @@ def register_view(request):
             return redirect('login')
 
     return render(request, 'store/register.html')
+
+from django.db.models import Q
+from .models import Produto
+
+def buscar_produtos(request):
+    query = request.GET.get('q')
+    resultados = Produto.objects.filter(
+        Q(nome__icontains=query) | Q(descricao__icontains=query)
+    ) if query else []
+
+    context = {
+        'query': query,
+        'resultados': resultados,
+        'categorias': Categoria.objects.all(),  # se usa em base.html
+    }
+    return render(request, 'store/busca.html', context)
+
+
+from django.shortcuts import render
+
+def contato(request):
+    return render(request, 'store/contato.html')
+
+def faq(request):
+    return render(request, 'store/faq.html')
+
+
+def politica_privacidade(request):
+    return render(request, 'store/politica_privacidade.html')
+
+def termos_uso(request):
+    return render(request, 'store/termos_uso.html')
+
+def ofertas(request):
+    produtos = Produto.objects.filter(em_oferta=True)
+    return render(request, 'store/ofertas.html', {'produtos': produtos})

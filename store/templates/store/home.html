@@ -50,24 +50,38 @@
 
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8">
   {% for produto in produtos %}
-    <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition duration-300 border border-gray-200 p-4 flex flex-col justify-between">
-      
-      <!-- Imagem -->
+    <div class="relative bg-white rounded-xl shadow-md hover:shadow-xl transition duration-300 border border-gray-200 p-4 flex flex-col justify-between">
+
+      <!-- ETIQUETA DE OFERTA -->
+      {% if produto.em_oferta %}
+        <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+          OFERTA
+        </div>
+      {% endif %}
+
+      <!-- IMAGEM -->
       {% if produto.imagem %}
         <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full h-48 object-contain mb-4" />
       {% else %}
         <img src="https://via.placeholder.com/300x200?text=Sem+Imagem" class="w-full h-48 object-contain mb-4" />
       {% endif %}
 
-      <!-- Nome do Produto -->
+      <!-- NOME -->
       <h2 class="text-sm font-semibold text-gray-800 leading-tight mb-1 line-clamp-2 uppercase">
         {{ produto.nome }}
       </h2>
-      <!-- Preço -->
-      <p class="text-xl font-bold text-[#1F2A85] mb-1">R$ {{ produto.preco }}</p>
-      <p class="text-sm text-gray-500 mb-4">Em até 1x R$ {{ produto.preco }} sem juros</p>
 
-      <!-- Botão -->
+      <!-- PREÇO -->
+      {% if produto.em_oferta %}
+        <p class="text-sm text-gray-500 line-through">R$ {{ produto.preco_antigo }}</p>
+        <p class="text-xl font-bold text-red-600 mb-1">R$ {{ produto.preco_novo }}</p>
+        <p class="text-sm text-gray-500 mb-4">Em até 1x R$ {{ produto.preco_novo }} sem juros</p>
+      {% else %}
+        <p class="text-xl font-bold text-[#1F2A85] mb-1">R$ {{ produto.preco }}</p>
+        <p class="text-sm text-gray-500 mb-4">Em até 1x R$ {{ produto.preco }} sem juros</p>
+      {% endif %}
+
+      <!-- BOTÃO -->
       <a href="{% url 'produto_detail' produto.id %}" class="block w-full bg-[#FFD400] hover:bg-yellow-300 text-black font-semibold py-2 rounded-md text-center transition">
         Ver detalhes
       </a>
@@ -75,6 +89,7 @@
   {% empty %}
     <p>Nenhum produto cadastrado.</p>
   {% endfor %}
+
 </div>
 
 {% endblock %}
