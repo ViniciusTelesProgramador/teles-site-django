@@ -1,22 +1,49 @@
 {% extends 'store/base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container mx-auto py-8">
-  <h2 class="text-2xl font-bold mb-6">
-    Produtos da categoria: {{ categoria.nome }}
-  </h2>
+<div class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    {% for produto in produtos %}
-    <div class="border rounded shadow p-4 bg-white">
-      <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="h-48 w-full object-contain">
-      <h3 class="mt-2 font-semibold text-lg">{{ produto.nome }}</h3>
-      <p class="text-gray-600">R$ {{ produto.preco }}</p>
-      <a href="{% url 'produto_detail' produto.id %}" class="mt-2 inline-block text-blue-500 hover:underline">Ver detalhes</a>
+  <!-- Sidebar com Marcas -->
+  <aside class="md:col-span-1">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">Filtrar por Marca</h2>
+    <ul class="space-y-2">
+      {% for marca in marcas %}
+        <li>
+          <a href="?marca={{ marca.id }}" class="block px-4 py-2 rounded hover:bg-gray-200 {% if marca.id == marca_selecionada %}bg-yellow-100 font-bold{% endif %}">
+            {{ marca.nome }}
+          </a>
+        </li>
+      {% endfor %}
+      {% if marca_selecionada %}
+        <li>
+          <a href="." class="text-sm text-red-600 hover:underline">Limpar filtro</a>
+        </li>
+      {% endif %}
+    </ul>
+  </aside>
+
+  <!-- Produtos -->
+  <section class="md:col-span-3">
+    <h1 class="text-2xl font-semibold text-gray-800 mb-6">
+      Produtos da categoria: {{ categoria.nome }}
+    </h1>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for produto in produtos %}
+        <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+          {% if produto.imagem %}
+            <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full h-40 object-contain mb-2" />
+          {% endif %}
+          <h2 class="text-sm font-semibold text-gray-800 uppercase">{{ produto.nome }}</h2>
+          <p class="text-sm text-gray-600 mb-1">R$ {{ produto.preco }}</p>
+          <a href="{% url 'produto_detail' produto.id %}" class="text-blue-600 text-sm hover:underline">Ver detalhes</a>
+        </div>
+      {% empty %}
+        <p>Nenhum produto encontrado para esta marca.</p>
+      {% endfor %}
     </div>
-    {% empty %}
-    <p>Nenhum produto nesta categoria.</p>
-    {% endfor %}
-  </div>
+  </section>
+
 </div>
 {% endblock %}

@@ -11,6 +11,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from django.contrib import messages
+from .models import Marca
 
 def home(request):
     produtos = Produto.objects.all()
@@ -162,13 +163,25 @@ def index(request):
 
 
 def produtos_por_categoria(request, categoria_id):
-    categoria = get_object_or_404(Categoria, id=categoria_id)
-    produtos = Produto.objects.filter(categoria=categoria)
-    return render(request, 'store/produtos_por_categoria.html', {
-        'categoria': categoria,
-        'produtos': produtos
-    })
+    categoria = Categoria.objects.get(id=categoria_id)
+    marca_id = request.GET.get('marca')  # pega marca da URL
 
+    produtos = Produto.objects.filter(categoria=categoria)
+
+    if marca_id:
+        produtos = produtos.filter(marca_id=marca_id)
+
+    # filtrar marcas que têm produtos nessa categoria
+    marcas = Marca.objects.filter(produto__categoria=categoria).distinct()
+
+    context = {
+        'categoria': categoria,
+        'produtos': produtos,
+        'marcas': marcas,
+        'marca_selecionada': int(marca_id) if marca_id else None
+    }
+
+    return render(request, 'store/produtos_por_categoria.html', context)
 
 def nossas_lojas(request):
     lojas = [
