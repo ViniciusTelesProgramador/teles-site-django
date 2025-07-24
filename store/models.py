@@ -15,15 +15,24 @@ class Produto(models.Model):
     preco = models.DecimalField(max_digits=10, decimal_places=2)
     estoque = models.PositiveIntegerField()
     categoria = models.ForeignKey('Categoria', on_delete=models.CASCADE)
-    imagem = models.ImageField(upload_to='produtos/')
+    marca = models.ForeignKey('Marca', on_delete=models.SET_NULL, null=True, blank=True)  # nova
+
+    imagem = models.ImageField(upload_to='produtos/capa/', null=True, blank=True)  # imagem principal
+    codigo_barras = models.CharField(max_length=50, blank=True, null=True)
     
-    # Novos campos
     em_oferta = models.BooleanField(default=False)
     preco_antigo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     preco_novo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
+    destaque = models.BooleanField(default=False)  # nova
+    ativo = models.BooleanField(default=True)  # nova
+
     def get_preco_display(self):
         return self.preco_novo if self.em_oferta and self.preco_novo else self.preco
+
+    def __str__(self):
+        return self.nome
+
 
 class Pedido(models.Model):
     nome = models.CharField(max_length=100)
@@ -44,3 +53,13 @@ class PedidoItem(models.Model):
 
     def __str__(self):
         return f"{self.produto_nome} (x{self.quantidade})"
+
+class Marca(models.Model):
+    nome = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.nome
+
+class ImagemProduto(models.Model):
+    produto = models.ForeignKey('Produto', on_delete=models.CASCADE, related_name='imagens')
+    imagem = models.ImageField(upload_to='produtos/imagens/')

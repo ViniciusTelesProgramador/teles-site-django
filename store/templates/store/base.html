@@ -16,6 +16,15 @@
     
     <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+
+    <style>
+    /* Garante que o submenu não desapareça bruscamente ao mover o mouse */
+    .group:hover .submenu {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    </style>
+
 </head>
 
 {% if debug %}
@@ -92,23 +101,24 @@ atualizarValorCarrinho();
 <nav class="bg-[#142165] text-white">
   <div class="max-w-7xl mx-auto px-4">
     <ul class="flex space-x-6 py-3 text-sm font-medium">
-      <li class="relative group">
-  <a href="#" class="flex items-center gap-1 {% if request.path|slice:":10" == "/categoria" %}text-[#FFD400]{% endif %} hover:text-[#FFD400]">
-    CATEGORIAS <i class="fas fa-chevron-down text-xs"></i>
-  </a>
-  <ul class="absolute left-0 mt-3 bg-white text-black rounded-xl shadow-lg z-50 w-60 hidden group-hover:block transition duration-200 border border-gray-200 overflow-hidden">
-    {% for categoria in categorias %}
-      <li>
-        <a href="{% url 'produtos_por_categoria' categoria.id %}"
-           class="block px-4 py-3 text-sm hover:bg-[#f8f8f8] hover:text-[#1F2A85] transition-colors duration-200">
-          {{ categoria.nome }}
-        </a>
-      </li>
-    {% empty %}
-      <li class="px-4 py-3 text-gray-500 text-sm">Nenhuma categoria cadastrada</li>
-    {% endfor %}
-  </ul>
-</li>
+    <li class="relative group">
+      <a href="#" class="flex items-center gap-1 {% if request.path|slice:":10" == "/categoria" %}text-[#FFD400]{% endif %} hover:text-[#FFD400]">
+        CATEGORIAS <i class="fas fa-chevron-down text-xs"></i>
+      </a>
+        <ul class="submenu absolute left-0 mt-3 bg-white text-black rounded-xl shadow-lg z-50 w-60 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity transition-[visibility] duration-200 delay-150 group-hover:delay-0 border border-gray-200">
+        {% for categoria in categorias %}
+          <li>
+            <a href="{% url 'produtos_por_categoria' categoria.id %}"
+              class="block px-4 py-3 text-sm hover:bg-[#f8f8f8] hover:text-[#1F2A85] transition-colors duration-200">
+              {{ categoria.nome }}
+            </a>
+          </li>
+        {% empty %}
+          <li class="px-4 py-3 text-gray-500 text-sm">Nenhuma categoria cadastrada</li>
+        {% endfor %}
+      </ul>
+    </li>
+
 
       <li class="relative group">
         <a href="#" class="flex items-center gap-1 hover:text-[#FFD400]">

@@ -49,46 +49,64 @@
 <h1 class="text-2xl font-semibold text-gray-800 mb-4 mt-4">Produtos</h1>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8">
-  {% for produto in produtos %}
-    <div class="relative bg-white rounded-xl shadow-md hover:shadow-xl transition duration-300 border border-gray-200 p-4 flex flex-col justify-between">
+{% for produto in produtos %}
+  <div class="relative bg-white rounded-xl shadow-md hover:shadow-xl transition duration-300 border border-gray-200 p-4 flex flex-col justify-between {% if not produto.ativo %}opacity-50 pointer-events-none{% endif %}">
 
-      <!-- ETIQUETA DE OFERTA -->
-      {% if produto.em_oferta %}
-        <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
-          OFERTA
-        </div>
-      {% endif %}
+    <!-- ETIQUETA DE OFERTA -->
+    {% if produto.em_oferta %}
+      <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+        OFERTA
+      </div>
+    {% endif %}
 
-      <!-- IMAGEM -->
-      {% if produto.imagem %}
-        <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full h-48 object-contain mb-4" />
-      {% else %}
-        <img src="https://via.placeholder.com/300x200?text=Sem+Imagem" class="w-full h-48 object-contain mb-4" />
-      {% endif %}
+    <!-- IMAGEM -->
+    {% if produto.imagem %}
+      <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full h-48 object-contain mb-4" />
+    {% else %}
+      <img src="https://via.placeholder.com/300x200?text=Sem+Imagem" class="w-full h-48 object-contain mb-4" />
+    {% endif %}
 
-      <!-- NOME -->
-      <h2 class="text-sm font-semibold text-gray-800 leading-tight mb-1 line-clamp-2 uppercase">
-        {{ produto.nome }}
-      </h2>
+    <!-- NOME -->
+    <h2 class="text-sm font-semibold text-gray-800 leading-tight mb-1 line-clamp-2 uppercase">
+      {{ produto.nome }}
+    </h2>
 
-      <!-- PREÇO -->
-      {% if produto.em_oferta %}
-        <p class="text-sm text-gray-500 line-through">R$ {{ produto.preco_antigo }}</p>
-        <p class="text-xl font-bold text-red-600 mb-1">R$ {{ produto.preco_novo }}</p>
-        <p class="text-sm text-gray-500 mb-4">Em até 1x R$ {{ produto.preco_novo }} sem juros</p>
-      {% else %}
-        <p class="text-xl font-bold text-[#1F2A85] mb-1">R$ {{ produto.preco }}</p>
-        <p class="text-sm text-gray-500 mb-4">Em até 1x R$ {{ produto.preco }} sem juros</p>
-      {% endif %}
+    <!-- MARCA -->
+    {% if produto.marca %}
+      <p class="text-xs text-gray-600 mb-1 uppercase">Marca: {{ produto.marca.nome }}</p>
+    {% endif %}
 
-      <!-- BOTÃO -->
+    <!-- PREÇO -->
+    {% if produto.em_oferta %}
+      <p class="text-sm text-gray-500 line-through">R$ {{ produto.preco_antigo }}</p>
+      <p class="text-xl font-bold text-red-600 mb-1">R$ {{ produto.preco_novo }}</p>
+      <p class="text-sm text-gray-500 mb-4">Em até 1x R$ {{ produto.preco_novo }} sem juros</p>
+    {% else %}
+      <p class="text-xl font-bold text-[#1F2A85] mb-1">R$ {{ produto.preco }}</p>
+      <p class="text-sm text-gray-500 mb-4">Em até 1x R$ {{ produto.preco }} sem juros</p>
+    {% endif %}
+
+    <!-- AVISO SE DESATIVADO -->
+    {% if not produto.ativo %}
+      <div class="text-sm text-red-600 font-semibold text-center mb-2">Produto desativado</div>
+    {% endif %}
+
+    <!-- BOTÃO -->
+    {% if produto.ativo %}
       <a href="{% url 'produto_detail' produto.id %}" class="block w-full bg-[#FFD400] hover:bg-yellow-300 text-black font-semibold py-2 rounded-md text-center transition">
         Ver detalhes
       </a>
-    </div>
-  {% empty %}
-    <p>Nenhum produto cadastrado.</p>
-  {% endfor %}
+    {% else %}
+      <button disabled class="block w-full bg-gray-400 text-white font-semibold py-2 rounded-md text-center cursor-not-allowed">
+        Indisponível
+      </button>
+    {% endif %}
+
+  </div>
+{% empty %}
+  <p>Nenhum produto cadastrado.</p>
+{% endfor %}
+
 
 </div>
 
