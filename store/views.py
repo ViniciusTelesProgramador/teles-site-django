@@ -15,6 +15,8 @@ from .models import Marca
 from django.contrib.auth.decorators import login_required
 from .models import Profile
 from django.contrib import messages
+from .forms import CheckoutForm
+
 
 def home(request):
     produtos = Produto.objects.all()
@@ -72,42 +74,29 @@ def remover_carrinho(request, produto_id):
     return HttpResponseRedirect(reverse('carrinho'))
 
 
-class CheckoutForm(forms.ModelForm):
-    class Meta:
-        model = Pedido
-        fields = ['nome', 'email', 'endereco', 'cep']
 
-
+@login_required
 def checkout(request):
     carrinho = request.session.get('carrinho', {})
-    frete = 0.00
+    total = sum(item['preco'] * item['quantidade'] for item in carrinho.values())
+
+    cep = request.user.profile.cep if hasattr(request.user, 'profile') else ''
+    is_sao_luis = cep.startswith('650')
+    entrega_gratis = is_sao_luis and total >= 400
+    mostrar_lojas = not entrega_gratis
 
     if request.method == 'POST':
-        cep = request.POST.get('cep', '')
-
-        if cep.startswith('01'):
-            frete = 10.00
-        elif cep.startswith('20'):
-            frete = 25.00
-        else:
-            frete = 40.00
-
-        carrinho_original = carrinho.copy()
-        total = sum(item['preco'] * item['quantidade'] for item in carrinho_original.values())
-        total += frete
-
-        form = CheckoutForm(request.POST)
+        form = CheckoutForm(request.POST, mostrar_lojas=mostrar_lojas)
         if form.is_valid():
             pedido = form.save(commit=False)
+            pedido.nome = f"{request.user.first_name} {request.user.last_name}"
+            pedido.email = request.user.email
+            pedido.cep = cep
             pedido.total = total
-
-            # 👉 Associa o usuário logado ao pedido, se houver
-            if request.user.is_authenticated:
-                pedido.usuario = request.user
-
+            pedido.usuario = request.user
             pedido.save()
 
-            for produto_id, item in carrinho_original.items():
+            for produto_id, item in carrinho.items():
                 PedidoItem.objects.create(
                     pedido=pedido,
                     produto_nome=item['nome'],
@@ -116,21 +105,27 @@ def checkout(request):
                 )
 
             request.session['carrinho'] = {}
-
-            return render(request, 'store/checkout_sucesso.html', {
-                'pedido': pedido,
-                'frete': frete
-            })
+            return render(request, 'store/checkout_sucesso.html', {'pedido': pedido})
     else:
-        form = CheckoutForm()
-        total = sum(item['preco'] * item['quantidade'] for item in carrinho.values())
+        form = CheckoutForm(
+        mostrar_lojas=mostrar_lojas,
+        initial={
+            'nome': f"{request.user.first_name} {request.user.last_name}",
+            'email': request.user.email,
+            'cep': cep
+        }
+)
+
 
     return render(request, 'store/checkout.html', {
         'form': form,
         'carrinho': carrinho,
         'total': total,
-        'frete': frete
+        'entrega_gratis': entrega_gratis,
+        'mostrar_lojas': mostrar_lojas,
+        'usuario': request.user
     })
+
 
 
 def atualizar_carrinho(request):
