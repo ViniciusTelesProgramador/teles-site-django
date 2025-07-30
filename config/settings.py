@@ -40,11 +40,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'store',
+    
     'tailwind',
     'theme.apps.ThemeConfig',  
     'django_browser_reload',
-     'widget_tweaks',
+    'widget_tweaks',
+    'store.apps.StoreConfig',
     
 ]
 

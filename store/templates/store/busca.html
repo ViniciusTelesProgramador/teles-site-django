@@ -9,13 +9,21 @@
   {% if resultados %}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
       {% for produto in resultados %}
-        <div class="bg-white shadow rounded-lg p-4">
-          <a href="{% url 'produto_detail' produto.id %}">
-            <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full h-40 object-contain mb-2">
-            <h2 class="text-sm font-semibold text-gray-800">{{ produto.nome }}</h2>
-            <p class="text-blue-600 font-bold">R$ {{ produto.preco|floatformat:2 }}</p>
-          </a>
+        <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+          {% if produto.imagem %}
+            <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full h-40 object-contain mb-2" />
+          {% endif %}
+          <h2 class="text-sm font-semibold text-gray-800 uppercase">{{ produto.nome }}</h2>
+          <p class="text-sm text-gray-600 mb-1">R$ {{ produto.preco }}</p>
+
+          {% if produto.ativo %}
+            <a href="{% url 'produto_detail' produto.id %}" class="block bg-yellow-400 text-black font-bold py-2 mt-2 rounded hover:bg-yellow-500 text-center">Ver detalhes</a>
+          {% else %}
+            <p class="text-red-600 text-sm mt-2">Produto Indisponível</p>
+            <button class="bg-gray-300 text-gray-700 font-bold py-2 rounded w-full mt-2" disabled>Indisponível</button>
+          {% endif %}
         </div>
+
       {% endfor %}
     </div>
   {% else %}

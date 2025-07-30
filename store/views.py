@@ -12,6 +12,9 @@ from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from django.contrib import messages
 from .models import Marca
+from django.contrib.auth.decorators import login_required
+from .models import Profile
+
 
 def home(request):
     produtos = Produto.objects.all()
@@ -89,9 +92,7 @@ def checkout(request):
         else:
             frete = 40.00
 
-        # Salva uma cópia segura do carrinho
         carrinho_original = carrinho.copy()
-
         total = sum(item['preco'] * item['quantidade'] for item in carrinho_original.values())
         total += frete
 
@@ -99,9 +100,13 @@ def checkout(request):
         if form.is_valid():
             pedido = form.save(commit=False)
             pedido.total = total
+
+            # 👉 Associa o usuário logado ao pedido, se houver
+            if request.user.is_authenticated:
+                pedido.usuario = request.user
+
             pedido.save()
 
-            # Agora usamos a cópia garantida
             for produto_id, item in carrinho_original.items():
                 PedidoItem.objects.create(
                     pedido=pedido,
@@ -110,7 +115,6 @@ def checkout(request):
                     quantidade=item['quantidade']
                 )
 
-            # Limpa o carrinho apenas depois
             request.session['carrinho'] = {}
 
             return render(request, 'store/checkout_sucesso.html', {
@@ -245,16 +249,24 @@ def home(request):
 
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        email = request.POST.get('email')
         senha = request.POST.get('password')
-        user = authenticate(request, username=username, password=senha)
+
+        try:
+            user_obj = User.objects.get(email=email)
+            user = authenticate(request, username=user_obj.username, password=senha)
+        except User.DoesNotExist:
+            user = None
+
         if user is not None:
             login(request, user)
             messages.success(request, 'Login realizado com sucesso.')
             return redirect('home')
         else:
-            messages.error(request, 'Usuário ou senha inválidos.')
+            messages.error(request, 'E-mail ou senha inválidos.')
+
     return render(request, 'store/login.html')
+
 
 
 def logout_view(request):
@@ -265,20 +277,36 @@ def logout_view(request):
 
 def register_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        username = request.POST.get('email')  # email será usado como username
         email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        cep = request.POST.get('cep')
         senha = request.POST.get('password')
         senha2 = request.POST.get('password2')
 
+        # Validações
         if senha != senha2:
             messages.error(request, 'As senhas não coincidem.')
+        elif len(senha) < 8 or not any(c.isupper() for c in senha) or not any(c.isdigit() for c in senha):
+            messages.error(request, 'A senha deve ter pelo menos 8 caracteres, uma letra maiúscula e um número.')
         elif User.objects.filter(username=username).exists():
-            messages.error(request, 'Nome de usuário já está em uso.')
-        elif User.objects.filter(email=email).exists():
             messages.error(request, 'E-mail já cadastrado.')
         else:
-            user = User.objects.create_user(username=username, email=email, password=senha)
-            user.save()
+            # Cria o usuário
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=senha,
+                first_name=first_name,
+                last_name=last_name
+            )
+
+            # Cria ou garante que o perfil existe
+            profile, created = Profile.objects.get_or_create(user=user)
+            profile.cep = cep
+            profile.save()
+
             messages.success(request, 'Cadastro realizado com sucesso. Faça login.')
             return redirect('login')
 
@@ -319,3 +347,13 @@ def termos_uso(request):
 def ofertas(request):
     produtos = Produto.objects.filter(em_oferta=True)
     return render(request, 'store/ofertas.html', {'produtos': produtos})
+
+
+@login_required
+def painel_usuario(request):
+    pedidos = Pedido.objects.filter(usuario=request.user).order_by('-criado_em')
+    profile = request.user.profile  # pega o CEP e outras infos
+    return render(request, 'store/painel_usuario.html', {
+        'pedidos': pedidos,
+        'profile': profile
+    })

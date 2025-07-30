@@ -15,26 +15,42 @@
     </ul>
   {% endif %}
 
-  <form method="post" class="space-y-4 bg-white p-6 rounded-lg shadow-md border border-gray-200">
-    {% csrf_token %}
+<form method="post" class="space-y-4 bg-white p-6 rounded-lg shadow-md border border-gray-200">
+  {% csrf_token %}
+  <div class="grid grid-cols-2 gap-4">
     <div>
-      <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
-      <input type="text" id="username" name="username" required class="w-full border-gray-300 rounded-md shadow-sm mt-1 px-3 py-2">
+      <label for="first_name" class="block text-sm font-medium text-gray-700">Primeiro nome</label>
+      <input type="text" id="first_name" name="first_name" required class="w-full border-gray-300 rounded-md shadow-sm mt-1 px-3 py-2">
     </div>
     <div>
-      <label for="email" class="block text-sm font-medium text-gray-700">E-mail</label>
-      <input type="email" id="email" name="email" required class="w-full border-gray-300 rounded-md shadow-sm mt-1 px-3 py-2">
+      <label for="last_name" class="block text-sm font-medium text-gray-700">Sobrenome</label>
+      <input type="text" id="last_name" name="last_name" required class="w-full border-gray-300 rounded-md shadow-sm mt-1 px-3 py-2">
     </div>
-    <div>
-      <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
-      <input type="password" id="password" name="password" required class="w-full border-gray-300 rounded-md shadow-sm mt-1 px-3 py-2">
-    </div>
-    <div>
-      <label for="password2" class="block text-sm font-medium text-gray-700">Confirmar senha</label>
-      <input type="password" id="password2" name="password2" required class="w-full border-gray-300 rounded-md shadow-sm mt-1 px-3 py-2">
-    </div>
-    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-md">Cadastrar</button>
-  </form>
+  </div>
+
+  <div>
+    <label for="email" class="block text-sm font-medium text-gray-700">E-mail</label>
+    <input type="email" id="email" name="email" required class="w-full border-gray-300 rounded-md shadow-sm mt-1 px-3 py-2">
+  </div>
+
+  <div>
+    <label for="cep" class="block text-sm font-medium text-gray-700">CEP</label>
+    <input type="text" id="cep" name="cep" required pattern="\d{5}-?\d{3}" maxlength="9" class="w-full border-gray-300 rounded-md shadow-sm mt-1 px-3 py-2">
+  </div>
+
+  <div>
+    <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
+    <input type="password" id="password" name="password" required class="w-full border-gray-300 rounded-md shadow-sm mt-1 px-3 py-2">
+  </div>
+
+  <div>
+    <label for="password2" class="block text-sm font-medium text-gray-700">Confirmar senha</label>
+    <input type="password" id="password2" name="password2" required class="w-full border-gray-300 rounded-md shadow-sm mt-1 px-3 py-2">
+  </div>
+
+  <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-md">Cadastrar</button>
+</form>
+
 
   <p class="text-center text-sm text-gray-600 mt-4">
     Já tem conta? <a href="{% url 'login' %}" class="text-blue-600 hover:underline">Entrar</a>

@@ -21,5 +21,7 @@ urlpatterns = [
     path('politica-de-privacidade/', views.politica_privacidade, name='politica_privacidade'),
     path('termos-de-uso/', views.termos_uso, name='termos_uso'),
     path('ofertas/', views.ofertas, name='ofertas'),
+    path('minha-conta/', views.painel_usuario, name='painel_usuario'),
+
 
 ]

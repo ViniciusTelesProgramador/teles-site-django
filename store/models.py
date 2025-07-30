@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.auth.models import User
+
 
 class Categoria(models.Model):
     nome = models.CharField(max_length=100)
@@ -7,7 +9,6 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nome
 
-from django.db import models
 
 class Produto(models.Model):
     nome = models.CharField(max_length=100)
@@ -35,15 +36,17 @@ class Produto(models.Model):
 
 
 class Pedido(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)  # NOVO
     nome = models.CharField(max_length=100)
     email = models.EmailField()
     endereco = models.TextField()
-    cep = models.CharField(max_length=10, blank=True, null=True)  
+    cep = models.CharField(max_length=10, blank=True, null=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return f"Pedido {self.id} - {self.nome}"
+
 
 class PedidoItem(models.Model):
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='itens')
@@ -63,3 +66,11 @@ class Marca(models.Model):
 class ImagemProduto(models.Model):
     produto = models.ForeignKey('Produto', on_delete=models.CASCADE, related_name='imagens')
     imagem = models.ImageField(upload_to='produtos/imagens/')
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    cep = models.CharField(max_length=9, blank=True)
+
+    def __str__(self):
+        return f"Perfil de {self.user.username}"
