@@ -156,3 +156,4 @@ NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+LOGIN_URL = '/login/'

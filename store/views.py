@@ -83,10 +83,12 @@ def checkout(request):
     cep = request.user.profile.cep if hasattr(request.user, 'profile') else ''
     is_sao_luis = cep.startswith('650')
     entrega_gratis = is_sao_luis and total >= 400
+
     mostrar_lojas = not entrega_gratis
+    mostrar_endereco = entrega_gratis
 
     if request.method == 'POST':
-        form = CheckoutForm(request.POST, mostrar_lojas=mostrar_lojas)
+        form = CheckoutForm(request.POST, mostrar_lojas=mostrar_lojas, mostrar_endereco=mostrar_endereco)
         if form.is_valid():
             pedido = form.save(commit=False)
             pedido.nome = f"{request.user.first_name} {request.user.last_name}"
@@ -108,14 +110,14 @@ def checkout(request):
             return render(request, 'store/checkout_sucesso.html', {'pedido': pedido})
     else:
         form = CheckoutForm(
-        mostrar_lojas=mostrar_lojas,
-        initial={
-            'nome': f"{request.user.first_name} {request.user.last_name}",
-            'email': request.user.email,
-            'cep': cep
-        }
-)
-
+            mostrar_lojas=mostrar_lojas,
+            mostrar_endereco=mostrar_endereco,
+            initial={
+                'nome': f"{request.user.first_name} {request.user.last_name}",
+                'email': request.user.email,
+                'cep': cep
+            }
+        )
 
     return render(request, 'store/checkout.html', {
         'form': form,
@@ -123,8 +125,9 @@ def checkout(request):
         'total': total,
         'entrega_gratis': entrega_gratis,
         'mostrar_lojas': mostrar_lojas,
-        'usuario': request.user
+        'mostrar_endereco': mostrar_endereco,
     })
+
 
 
 
