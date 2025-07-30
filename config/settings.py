@@ -154,4 +154,5 @@ MIDDLEWARE += ['django_browser_reload.middleware.BrowserReloadMiddleware']
 
 NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 

@@ -1,0 +1,13 @@
+{% extends "store/base.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-10 px-6">
+  <h1 class="text-xl font-bold mb-4">🔑 Alterar Senha</h1>
+
+  <form method="post" class="space-y-4 bg-white p-6 rounded-lg shadow-md border">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Salvar nova senha</button>
+  </form>
+</div>
+{% endblock %}

@@ -14,7 +14,7 @@ from django.contrib import messages
 from .models import Marca
 from django.contrib.auth.decorators import login_required
 from .models import Profile
-
+from django.contrib import messages
 
 def home(request):
     produtos = Produto.objects.all()
@@ -357,3 +357,38 @@ def painel_usuario(request):
         'pedidos': pedidos,
         'profile': profile
     })
+
+
+
+@login_required
+def editar_perfil_view(request):
+    user = request.user
+    profile = user.profile
+
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        email = request.POST.get('email')
+        cep = request.POST.get('cep')
+
+        # Validação básica
+        if User.objects.filter(email=email).exclude(id=user.id).exists():
+            messages.error(request, 'Este e-mail já está em uso.')
+        else:
+            user.first_name = first_name
+            user.last_name = last_name
+            user.email = email
+            user.username = email  # se você usa o e-mail como username
+            user.save()
+
+            profile.cep = cep
+            profile.save()
+
+            messages.success(request, 'Dados atualizados com sucesso!')
+            return redirect('painel_usuario')
+
+    return render(request, 'store/editar_perfil.html', {
+        'user': user,
+        'profile': profile
+    })
+

@@ -50,50 +50,55 @@ atualizarValorCarrinho();
 
 <!-- HEADER SUPERIOR -->
 <!-- HEADER SUPERIOR -->
-<header class="bg-[#1F2A85] text-white">
+<header class="bg-[#1F2A85] text-white shadow-md">
   <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-24">
-    
-    <!-- Logo (maior e visível) -->
+
+    <!-- Logo -->
     <a href="/" class="flex items-center space-x-2">
       <img src="{% static 'img/LOGO TELES1.png' %}" alt="Logo Teles Acabamento" class="h-20 w-auto object-contain">
     </a>
 
-<!-- Campo de busca funcional -->
-<div class="flex-1 mx-4">
-  <form method="GET" action="{% url 'buscar_produtos' %}" class="relative">
-    <input type="text" name="q" placeholder="O que você procura?"
-           class="w-full rounded-md px-4 py-2 text-black focus:outline-none" required>
-    <button type="submit"
-            class="absolute right-0 top-0 h-full px-4 bg-[#FFD400] rounded-r-md text-black hover:bg-yellow-400">
-      <i class="fas fa-search"></i>
-    </button>
-  </form>
-</div>
+    <!-- Campo de Busca -->
+    <div class="flex-1 mx-6">
+      <form method="GET" action="{% url 'buscar_produtos' %}" class="relative w-full">
+        <input type="text" name="q" placeholder="O que você procura?"
+               class="w-full rounded-md px-4 py-2 text-black focus:outline-none shadow-inner" required>
+        <button type="submit"
+                class="absolute right-0 top-0 h-full px-4 bg-[#FFD400] rounded-r-md text-black hover:bg-yellow-400">
+          <i class="fas fa-search"></i>
+        </button>
+      </form>
+    </div>
 
+    <!-- Conta e Carrinho -->
+    <div class="flex items-center space-x-8 text-sm">
 
-    <!-- Entrar / Carrinho -->
-    <div class="flex space-x-4 text-sm items-center">
-    {% if user.is_authenticated %}
-      <div class="flex flex-col items-start text-sm text-white">
-        <span>👋 {{ user.first_name|default:user.username }}</span>
-        <div class="flex gap-2">
-          <a href="{% url 'painel_usuario' %}" class="hover:underline">Minha Conta</a>
-          <a href="{% url 'logout' %}" class="hover:underline">Sair</a>
+      <!-- Conta -->
+      {% if user.is_authenticated %}
+      <div class="flex items-center space-x-2">
+        <i class="fas fa-user-circle text-2xl text-white"></i>
+        <div class="flex flex-col leading-4">
+          <span class="font-semibold text-sm">{{ user.first_name|default:user.username }}</span>
+          <div class="flex gap-2 text-xs">
+            <a href="{% url 'painel_usuario' %}" class="hover:text-yellow-300 transition">Minha Conta</a>
+            <span class="h-4 border-l border-white"></span>
+            <a href="{% url 'logout' %}" class="hover:text-yellow-300 transition">Sair</a>
+          </div>
         </div>
       </div>
-    {% else %}
-      <a href="{% url 'login' %}" class="flex items-center gap-1 text-white hover:underline">
-        <i class="fas fa-user"></i> Entrar
+      {% else %}
+      <a href="{% url 'login' %}" class="flex items-center gap-1 hover:text-yellow-300 transition">
+        <i class="fas fa-user-circle text-xl"></i> Entrar
       </a>
-    {% endif %}
+      {% endif %}
+      
 
-
-
-      <a href="{% url 'carrinho' %}" class="relative flex items-center gap-2 text-white hover:underline">
-        <i class="fas fa-shopping-cart text-xl"></i>
-        <span>R$ {{ valor_total_carrinho|floatformat:2 }}</span>
+      <!-- Carrinho -->
+      <a href="{% url 'carrinho' %}" class="relative flex items-center gap-2 hover:text-yellow-300 transition">
+        <i class="fas fa-shopping-cart text-2xl"></i>
+        <span class="font-semibold">R$ {{ valor_total_carrinho|floatformat:2 }}</span>
         {% if quantidade_total_carrinho > 0 %}
-        <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+        <span class="absolute -top-2 -right-3 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
           {{ quantidade_total_carrinho }}
         </span>
         {% endif %}
@@ -101,6 +106,7 @@ atualizarValorCarrinho();
     </div>
   </div>
 </header>
+
 
 
 <!-- MENU PRINCIPAL -->

@@ -22,6 +22,35 @@ urlpatterns = [
     path('termos-de-uso/', views.termos_uso, name='termos_uso'),
     path('ofertas/', views.ofertas, name='ofertas'),
     path('minha-conta/', views.painel_usuario, name='painel_usuario'),
-
+    path('minha-conta/editar/', views.editar_perfil_view, name='editar_perfil'),
 
 ]
+
+from django.contrib.auth import views as auth_views
+
+path('minha-conta/alterar-senha/', auth_views.PasswordChangeView.as_view(
+    template_name='store/alterar_senha.html',
+    success_url='/minha-conta/'
+), name='alterar_senha'),
+
+# Recuperar senha
+path('recuperar-senha/', auth_views.PasswordResetView.as_view(
+    template_name='store/password_reset.html',
+    email_template_name='store/password_reset_email.html',
+    subject_template_name='store/password_reset_subject.txt',
+    success_url='/recuperar-senha/enviado/'
+), name='password_reset'),
+
+path('recuperar-senha/enviado/', auth_views.PasswordResetDoneView.as_view(
+    template_name='store/password_reset_done.html'
+), name='password_reset_done'),
+
+path('recuperar-senha/confirmar/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
+    template_name='store/password_reset_confirm.html',
+    success_url='/recuperar-senha/completo/'
+), name='password_reset_confirm'),
+
+path('recuperar-senha/completo/', auth_views.PasswordResetCompleteView.as_view(
+    template_name='store/password_reset_complete.html'
+), name='password_reset_complete'),
+
