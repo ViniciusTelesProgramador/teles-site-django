@@ -16,7 +16,7 @@
 </style>
 
 <div class="max-w-7xl mx-auto px-4 py-12">
-  <h1 class="text-2xl font-bold text-gray-800 mb-6">🛒 Carrinho de Compras</h1>
+  <h1 class="text-2xl font-bold text-gray-800 mb-6">Carrinho de Compras</h1>
 
   {% if carrinho %}
   <form method="post" action="{% url 'atualizar_carrinho' %}" class="space-y-6">
@@ -35,7 +35,14 @@
         <tbody class="divide-y divide-gray-100">
           {% for produto_id, item in carrinho.items %}
           <tr>
-            <td class="px-6 py-4 font-medium text-gray-800">{{ item.nome }}</td>
+            <td class="px-6 py-4 font-medium text-gray-800">
+            <div class="flex items-center gap-3">
+              {% if item.imagem_url %}
+                <img src="{{ item.imagem_url }}" alt="{{ item.nome }}" class="w-14 h-14 object-contain rounded border border-gray-300">
+              {% endif %}
+              <span>{{ item.nome }}</span>
+            </div>
+            </td>
             <td class="px-6 py-4 text-green-700 font-semibold">R$ {{ item.preco }}</td>
             <td class="px-6 py-4">
               <div class="flex items-center gap-2">

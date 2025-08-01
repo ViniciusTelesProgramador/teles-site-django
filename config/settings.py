@@ -157,3 +157,5 @@ NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 LOGIN_URL = '/login/'
+
+MERCADO_PAGO_ACCESS_TOKEN = 'APP_USR-1674847999465710-073109-022aeac07518cfafbd6cb079e2a62a79-533659685'  

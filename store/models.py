@@ -43,7 +43,8 @@ class Pedido(models.Model):
     cep = models.CharField(max_length=10, blank=True, null=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
-    loja_retirada = models.CharField(max_length=100, blank=True, null=True)  # NOVO
+    loja_retirada = models.CharField(max_length=100, blank=True, null=True)
+    opcao_entrega = models.CharField(max_length=10, choices=[("entrega", "Entrega"), ("retirada", "Retirada")], blank=True, null=True)  # NOVO
 
     def __str__(self):
         return f"Pedido {self.id} - {self.nome}"

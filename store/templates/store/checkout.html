@@ -1,72 +1,107 @@
 {% extends 'store/base.html' %}
 {% load static %}
-{% load widget_tweaks %}
 
-{% block title %}Finalizar Pedido - Teles{% endblock %}
+{% block title %}Finalizar Pedido{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 py-10">
-  <h1 class="text-2xl font-bold mb-6">🧾 Finalizar Pedido</h1>
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold mb-6">Finalizar Pedido</h1>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-    <!-- Resumo do Carrinho -->
+  <div class="bg-white p-6 rounded shadow mb-8">
+    <h2 class="text-lg font-semibold mb-4">Resumo do Carrinho</h2>
+    {% for item in carrinho.values %}
+      <p>{{ item.nome }} ({{ item.quantidade }} x R$ {{ item.preco|floatformat:2 }})</p>
+    {% endfor %}
+    <p class="text-green-600 font-bold mt-4">Total: R$ {{ total|floatformat:2 }}</p>
+
+    {% if entrega_gratis %}
+      <p class="text-blue-600 mt-2 flex items-center gap-1">
+        <span>🎉</span> Você ganhou entrega grátis para São Luís!
+      </p>
+    {% endif %}
+  </div>
+
+  <!-- ✅ Formulário de checkout (dados do pedido) -->
+  <form method="post" class="bg-white p-6 rounded shadow space-y-4">
+    {% csrf_token %}
+
     <div>
-      <h2 class="text-lg font-semibold mb-2">Resumo do Carrinho</h2>
-      <ul class="mb-4 space-y-1">
-        {% for item in carrinho.values %}
-          <li class="text-sm">{{ item.nome }} ({{ item.quantidade }} x R$ {{ item.preco|floatformat:2 }})</li>
-        {% endfor %}
-      </ul>
-      <p class="text-green-600 font-semibold text-lg">Total: R$ {{ total|floatformat:2 }}</p>
-      {% if entrega_gratis %}
-        <p class="text-blue-700 text-sm mt-2">🎉 Você ganhou entrega grátis para São Luís!</p>
-      {% endif %}
+      <label class="block font-semibold">Nome:</label>
+      {{ form.nome }}
     </div>
 
-    <!-- Formulário -->
     <div>
-      <form method="post" class="space-y-4">
-        {% csrf_token %}
-
-        <label class="block">
-          Nome:
-          {{ form.nome|add_class:"w-full px-3 py-2 border rounded-md bg-gray-100" }}
-        </label>
-
-        <label class="block">
-          Email:
-          {{ form.email|add_class:"w-full px-3 py-2 border rounded-md bg-gray-100" }}
-        </label>
-
-        <label class="block">
-          CEP:
-          {{ form.cep|add_class:"w-full px-3 py-2 border rounded-md bg-gray-100" }}
-        </label>
-
-        {% if mostrar_endereco %}
-          <label class="block">
-            Endereço (opcional):
-            {{ form.endereco|add_class:"w-full px-3 py-2 border rounded-md" }}
-          </label>
-        {% endif %}
-
-        {% if mostrar_lojas %}
-          <label class="block">
-            {{ form.loja_retirada.label }}
-            {{ form.loja_retirada|add_class:"w-full px-3 py-2 border rounded-md" }}
-          </label>
-        {% endif %}
-
-        <div class="flex justify-between mt-4">
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
-            Finalizar Pedido
-          </button>
-          <a href="{% url 'carrinho' %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition">
-            Voltar ao carrinho
-          </a>
-        </div>
-      </form>
+      <label class="block font-semibold">Email:</label>
+      {{ form.email }}
     </div>
+
+    <div>
+      <label class="block font-semibold">CEP:</label>
+      {{ form.cep }}
+    </div>
+
+    {% if form.opcao_entrega %}
+      <div>
+        <label class="block font-semibold mb-1">Como deseja receber:</label>
+        {{ form.opcao_entrega }}
+      </div>
+    {% endif %}
+
+    {% if form.endereco %}
+      <div id="endereco-campo">
+        <label class="block font-semibold">Endereço (opcional):</label>
+        {{ form.endereco }}
+      </div>
+    {% endif %}
+
+    {% if form.loja_retirada %}
+      <div id="loja-retirada-campo">
+        <label class="block font-semibold">{{ form.loja_retirada.label }}</label>
+        {{ form.loja_retirada }}
+      </div>
+    {% endif %}
+
+    <div class="flex gap-4 mt-6">
+      <a href="{% url 'carrinho' %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+        Voltar ao carrinho
+      </a>
+    </div>
+  </form>
+
+  <!-- ✅ Formulário separado para pagamento com Mercado Pago, fora do form principal -->
+  <div class="mt-6">
+    <form action="{% url 'checkout_mercado_pago' %}" method="post">
+      {% csrf_token %}
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded w-full">
+        Pagar com Mercado Pago
+      </button>
+    </form>
   </div>
 </div>
+
+<!-- Scripts para mostrar/esconder campos -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const opcaoEntregaRadios = document.querySelectorAll('input[name="opcao_entrega"]');
+    const enderecoCampo = document.getElementById('endereco-campo');
+    const lojaRetiradaCampo = document.getElementById('loja-retirada-campo');
+
+    function atualizarCamposEntrega() {
+      const selecionado = document.querySelector('input[name="opcao_entrega"]:checked');
+
+      if (!selecionado) return;
+
+      const isEntrega = selecionado.value === 'entrega';
+      const isRetirada = selecionado.value === 'retirada';
+
+      if (enderecoCampo) enderecoCampo.style.display = isEntrega ? 'block' : 'none';
+      if (lojaRetiradaCampo) lojaRetiradaCampo.style.display = isRetirada ? 'block' : 'none';
+    }
+
+    atualizarCamposEntrega(); // Estado inicial
+    opcaoEntregaRadios.forEach(radio => {
+      radio.addEventListener('change', atualizarCamposEntrega);
+    });
+  });
+</script>
 {% endblock %}

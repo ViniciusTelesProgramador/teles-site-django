@@ -16,6 +16,11 @@ from django.contrib.auth.decorators import login_required
 from .models import Profile
 from django.contrib import messages
 from .forms import CheckoutForm
+import mercadopago
+from django.conf import settings
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
+
 
 
 def home(request):
@@ -55,10 +60,16 @@ def carrinho(request):
     carrinho = request.session.get('carrinho', {})
     total = 0
 
-    # Vamos calcular o subtotal de cada item e atualizar no dicionário
-    for item in carrinho.values():
+    for produto_id in list(carrinho.keys()):
+        item = carrinho[produto_id]
         item['subtotal'] = item['preco'] * item['quantidade']
         total += item['subtotal']
+
+        try:
+            produto = Produto.objects.get(id=produto_id)
+            item['imagem_url'] = produto.imagem.url if produto.imagem else ''
+        except Produto.DoesNotExist:
+            item['imagem_url'] = ''
 
     return render(request, 'store/carrinho.html', {'carrinho': carrinho, 'total': total})
 
@@ -84,11 +95,18 @@ def checkout(request):
     is_sao_luis = cep.startswith('650')
     entrega_gratis = is_sao_luis and total >= 400
 
-    mostrar_lojas = not entrega_gratis
-    mostrar_endereco = entrega_gratis
+    # ✅ Regras para exibição dos campos
+    mostrar_lojas = not entrega_gratis  # se não ganhou entrega, obriga escolher loja
+    mostrar_endereco = entrega_gratis  # mostra campo de endereço apenas se entrega grátis
+    permitir_opcao_entrega = entrega_gratis  # mostra os radios somente para entrega grátis
 
     if request.method == 'POST':
-        form = CheckoutForm(request.POST, mostrar_lojas=mostrar_lojas, mostrar_endereco=mostrar_endereco)
+        form = CheckoutForm(
+            request.POST,
+            mostrar_lojas=mostrar_lojas,
+            mostrar_endereco=mostrar_endereco,
+            permitir_opcao_entrega=permitir_opcao_entrega
+        )
         if form.is_valid():
             pedido = form.save(commit=False)
             pedido.nome = f"{request.user.first_name} {request.user.last_name}"
@@ -96,6 +114,12 @@ def checkout(request):
             pedido.cep = cep
             pedido.total = total
             pedido.usuario = request.user
+
+            # salva o campo opcao_entrega, se disponível
+            opcao_entrega = form.cleaned_data.get('opcao_entrega')
+            if opcao_entrega:
+                pedido.opcao_entrega = opcao_entrega  # precisa existir no model se quiser salvar
+
             pedido.save()
 
             for produto_id, item in carrinho.items():
@@ -108,16 +132,19 @@ def checkout(request):
 
             request.session['carrinho'] = {}
             return render(request, 'store/checkout_sucesso.html', {'pedido': pedido})
+
     else:
         form = CheckoutForm(
             mostrar_lojas=mostrar_lojas,
             mostrar_endereco=mostrar_endereco,
+            permitir_opcao_entrega=permitir_opcao_entrega,
             initial={
                 'nome': f"{request.user.first_name} {request.user.last_name}",
                 'email': request.user.email,
                 'cep': cep
             }
         )
+    request.session['total'] = total
 
     return render(request, 'store/checkout.html', {
         'form': form,
@@ -127,8 +154,6 @@ def checkout(request):
         'mostrar_lojas': mostrar_lojas,
         'mostrar_endereco': mostrar_endereco,
     })
-
-
 
 
 def atualizar_carrinho(request):
@@ -390,3 +415,66 @@ def editar_perfil_view(request):
         'profile': profile
     })
 
+
+@login_required
+@require_POST
+def checkout_mercado_pago(request):
+    sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+    carrinho = request.session.get("carrinho", {})
+    if not carrinho:
+        messages.error(request, "Carrinho vazio.")
+        return redirect("carrinho")
+
+    total = sum(item['preco'] * item['quantidade'] for item in carrinho.values())
+
+    # ✅ Fora do dicionário, ANTES do preference_data
+    ngrok_base = "https://26bb4ffc23fe.ngrok-free.app"
+
+    preference_data = {
+        "items": [
+            {
+                "title": "Pedido Teles",
+                "quantity": 1,
+                "currency_id": "BRL",
+                "unit_price": float(total),
+            }
+        ],
+        "back_urls": {
+            "success": ngrok_base + reverse("pagamento_sucesso"),
+            "failure": ngrok_base + reverse("pagamento_erro"),
+            "pending": ngrok_base + reverse("pagamento_pendente"),
+        },
+        "auto_return": "approved",
+    }
+
+    try:
+        preference_response = sdk.preference().create(preference_data)
+        print("🟢 Preferência Mercado Pago:", preference_response)
+
+        if not preference_response or "response" not in preference_response:
+            messages.error(request, "Erro ao criar preferência de pagamento.")
+            return redirect("checkout")
+
+        preference = preference_response["response"]
+
+        if "init_point" not in preference:
+            messages.error(request, "URL de pagamento não encontrada.")
+            return redirect("checkout")
+
+        return redirect(preference["init_point"])
+
+    except Exception as e:
+        messages.error(request, f"Erro ao conectar com Mercado Pago: {str(e)}")
+        return redirect("checkout")
+    
+from django.shortcuts import render
+
+def pagamento_sucesso(request):
+    return render(request, "pagamento_sucesso.html")
+
+def pagamento_erro(request):
+    return render(request, "pagamento_erro.html")
+
+def pagamento_pendente(request):
+    return render(request, "pagamento_pendente.html")

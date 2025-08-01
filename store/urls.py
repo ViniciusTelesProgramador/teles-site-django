@@ -23,6 +23,11 @@ urlpatterns = [
     path('ofertas/', views.ofertas, name='ofertas'),
     path('minha-conta/', views.painel_usuario, name='painel_usuario'),
     path('minha-conta/editar/', views.editar_perfil_view, name='editar_perfil'),
+    path("checkout/pagar/", views.checkout_mercado_pago, name="checkout_mercado_pago"),
+    path("pedido/concluido/", views.pagamento_sucesso, name="pagamento_sucesso"),
+    path("pedido/erro/", views.pagamento_erro, name="pagamento_erro"),
+    path("pedido/pendente/", views.pagamento_pendente, name="pagamento_pendente"),
+
 
 ]
 
