@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from .views import activate_view
+from .views import toggle_favorito_view
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -27,7 +29,9 @@ urlpatterns = [
     path("pedido/concluido/", views.pagamento_sucesso, name="pagamento_sucesso"),
     path("pedido/erro/", views.pagamento_erro, name="pagamento_erro"),
     path("pedido/pendente/", views.pagamento_pendente, name="pagamento_pendente"),
-
+    path('ativar/<uidb64>/<token>/', activate_view, name='activate'),
+    path('favorito/<int:produto_id>/', toggle_favorito_view, name='toggle_favorito'),
+    path('favoritos/', views.favoritos_view, name='favoritos'),
 
 ]
 

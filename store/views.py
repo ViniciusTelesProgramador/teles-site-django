@@ -14,12 +14,18 @@ from django.contrib import messages
 from .models import Marca
 from django.contrib.auth.decorators import login_required
 from .models import Profile
-from django.contrib import messages
 from .forms import CheckoutForm
 import mercadopago
 from django.conf import settings
-from django.shortcuts import redirect
 from django.views.decorators.http import require_POST
+import requests
+from django.shortcuts import render, redirect
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.core.mail import send_mail
+
+
 
 
 
@@ -192,20 +198,29 @@ def index(request):
 def produtos_por_categoria(request, categoria_id):
     categoria = Categoria.objects.get(id=categoria_id)
     marca_id = request.GET.get('marca')  # pega marca da URL
+    ordenar = request.GET.get('ordenar')  # novo: pega ordenação da URL
 
     produtos = Produto.objects.filter(categoria=categoria)
 
     if marca_id:
         produtos = produtos.filter(marca_id=marca_id)
 
-    # filtrar marcas que têm produtos nessa categoria
+    if ordenar == 'menor_preco':
+        produtos = produtos.order_by('preco')
+    elif ordenar == 'maior_preco':
+        produtos = produtos.order_by('-preco')
+    elif ordenar == 'lancamento':
+        produtos = produtos.order_by('-data_criacao')  # ou 'data_lancamento' se tiver esse campo
+
+    # marcas disponíveis apenas dentro da categoria
     marcas = Marca.objects.filter(produto__categoria=categoria).distinct()
 
     context = {
         'categoria': categoria,
         'produtos': produtos,
         'marcas': marcas,
-        'marca_selecionada': int(marca_id) if marca_id else None
+        'marca_selecionada': int(marca_id) if marca_id else None,
+        'ordenar': ordenar,  # necessário para manter valor no <select>
     }
 
     return render(request, 'store/produtos_por_categoria.html', context)
@@ -300,7 +315,22 @@ def logout_view(request):
 
 def register_view(request):
     if request.method == 'POST':
-        username = request.POST.get('email')  # email será usado como username
+        # 1. Verificação do reCAPTCHA v2
+        token = request.POST.get('g-recaptcha-response')
+        recaptcha_response = requests.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            data={
+                'secret': settings.RECAPTCHA_SECRET_KEY,
+                'response': token
+            }
+        )
+        result = recaptcha_response.json()
+        if not result.get('success'):
+            messages.error(request, 'Erro na verificação do reCAPTCHA.')
+            return redirect('register')
+
+        # 2. Dados do formulário
+        username = request.POST.get('email')
         email = request.POST.get('email')
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')
@@ -308,7 +338,7 @@ def register_view(request):
         senha = request.POST.get('password')
         senha2 = request.POST.get('password2')
 
-        # Validações
+        # 3. Validações
         if senha != senha2:
             messages.error(request, 'As senhas não coincidem.')
         elif len(senha) < 8 or not any(c.isupper() for c in senha) or not any(c.isdigit() for c in senha):
@@ -316,7 +346,7 @@ def register_view(request):
         elif User.objects.filter(username=username).exists():
             messages.error(request, 'E-mail já cadastrado.')
         else:
-            # Cria o usuário
+            # 4. Criação do usuário (inativo) e perfil
             user = User.objects.create_user(
                 username=username,
                 email=email,
@@ -324,32 +354,54 @@ def register_view(request):
                 first_name=first_name,
                 last_name=last_name
             )
+            user.is_active = False  # desativa até a confirmação
+            user.save()
 
-            # Cria ou garante que o perfil existe
             profile, created = Profile.objects.get_or_create(user=user)
             profile.cep = cep
             profile.save()
 
-            messages.success(request, 'Cadastro realizado com sucesso. Faça login.')
+            # 5. Envia o e-mail de ativação
+            send_activation_email(request, user)
+
+            messages.success(request, 'Cadastro realizado! Verifique seu e-mail para ativar sua conta.')
             return redirect('login')
 
-    return render(request, 'store/register.html')
+    # GET request
+    return render(request, 'store/register.html', {
+        'recaptcha_site_key': settings.RECAPTCHA_SITE_KEY
+    })
+
 
 from django.db.models import Q
 from .models import Produto
 
+from django.db.models import Q
+from .models import Produto, Categoria
+
 def buscar_produtos(request):
     query = request.GET.get('q')
+    ordenar = request.GET.get('ordenar')
+
     resultados = Produto.objects.filter(
         Q(nome__icontains=query) | Q(descricao__icontains=query)
     ) if query else []
 
+    if ordenar == 'menor_preco':
+        resultados = resultados.order_by('preco')
+    elif ordenar == 'maior_preco':
+        resultados = resultados.order_by('-preco')
+    elif ordenar == 'lancamento':
+        resultados = resultados.order_by('-data_criacao')  # ajuste conforme seu modelo
+
     context = {
         'query': query,
+        'ordenar': ordenar,
         'resultados': resultados,
-        'categorias': Categoria.objects.all(),  # se usa em base.html
+        'categorias': Categoria.objects.all(),  # usado no base.html
     }
     return render(request, 'store/busca.html', context)
+
 
 
 from django.shortcuts import render
@@ -478,3 +530,60 @@ def pagamento_erro(request):
 
 def pagamento_pendente(request):
     return render(request, "pagamento_pendente.html")
+
+
+def send_activation_email(request, user):
+    token = default_token_generator.make_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    activation_link = request.build_absolute_uri(reverse('activate', args=[uid, token]))
+    
+    subject = 'Ative sua conta'
+    message = f'Olá {user.first_name},\n\nAtive sua conta acessando:\n{activation_link}'
+    
+    send_mail(subject, message, 'no-reply@seusite.com', [user.email])
+
+
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.models import User
+
+def activate_view(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (User.DoesNotExist, ValueError, TypeError):
+        user = None
+
+    if user and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        messages.success(request, 'Conta ativada com sucesso! Faça login.')
+        return redirect('login')
+    else:
+        messages.error(request, 'Link de ativação inválido ou expirado.')
+        return redirect('register')
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Produto, Favorito
+from django.http import JsonResponse
+
+@login_required
+def toggle_favorito_view(request, produto_id):
+    produto = get_object_or_404(Produto, id=produto_id)
+    favorito, created = Favorito.objects.get_or_create(user=request.user, produto=produto)
+
+    if not created:
+        favorito.delete()
+        status = 'removed'
+    else:
+        status = 'added'
+
+    return JsonResponse({'status': status})
+
+
+
+@login_required
+def favoritos_view(request):
+    favoritos = Favorito.objects.filter(user=request.user).select_related('produto')
+    return render(request, 'store/favoritos.html', {'favoritos': favoritos})

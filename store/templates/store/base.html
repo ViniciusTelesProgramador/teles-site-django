@@ -153,6 +153,8 @@ atualizarValorCarrinho();
       </li>
       <li><a href="{% url 'nossas_lojas' %}" class="hover:text-[#FFD400]">NOSSAS LOJAS</a></li>
       <li><a href="{% url 'ofertas' %}" class="hover:text-[#FFD400]">OFERTAS</a></li>
+      <li><a href="{% url 'favoritos' %}" class="hover:text-[#FFD400]">MEUS FAVORITOS</a>
+</li>
     </ul>
   </div>
 </nav>
@@ -261,6 +263,29 @@ atualizarValorCarrinho();
   });
 </script>
 
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.toggle-favorito').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const produtoId = this.dataset.id;
+        const icon = this.querySelector('i');
+
+        fetch(`/favorito/${produtoId}/`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.status === 'added') {
+              icon.classList.remove('text-gray-400');
+              icon.classList.add('text-red-500');
+            } else {
+              icon.classList.remove('text-red-500');
+              icon.classList.add('text-gray-400');
+            }
+          });
+      });
+    });
+  });
+</script>
 
 </body>
 </html>
+

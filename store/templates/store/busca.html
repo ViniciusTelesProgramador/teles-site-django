@@ -4,7 +4,20 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-8">
-  <h1 class="text-2xl font-semibold mb-4">Resultados para "{{ query }}"</h1>
+  <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+  <h1 class="text-2xl font-semibold mb-2 md:mb-0">Resultados para "{{ query }}"</h1>
+
+  <form method="get" class="flex items-center space-x-2">
+    <input type="hidden" name="q" value="{{ query }}">
+    <label for="ordenar" class="text-sm text-gray-600">Ordenar por:</label>
+    <select name="ordenar" id="ordenar" onchange="this.form.submit()" class="border border-gray-300 rounded px-2 py-1 text-sm">
+      <option value="">-- Selecione --</option>
+      <option value="menor_preco" {% if ordenar == 'menor_preco' %}selected{% endif %}>Menor preço</option>
+      <option value="maior_preco" {% if ordenar == 'maior_preco' %}selected{% endif %}>Maior preço</option>
+    </select>
+  </form>
+</div>
+
 
   {% if resultados %}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">

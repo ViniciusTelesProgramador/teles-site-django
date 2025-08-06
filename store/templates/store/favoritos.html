@@ -1,0 +1,26 @@
+{% extends 'store/base.html' %}
+{% block title %}Meus Favoritos{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold mb-6">Meus Produtos Favoritos</h1>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {% for favorito in favoritos %}
+      <div class="bg-white border rounded-lg shadow-md p-4">
+        <a href="{% url 'produto_detail' favorito.produto.id %}">
+          {% if favorito.produto.imagem %}
+            <img src="{{ favorito.produto.imagem.url }}" alt="{{ favorito.produto.nome }}" class="w-full h-48 object-contain mb-4">
+          {% else %}
+            <img src="https://via.placeholder.com/300x200?text=Sem+Imagem" class="w-full h-48 object-contain mb-4">
+          {% endif %}
+          <h2 class="text-lg font-semibold text-gray-800">{{ favorito.produto.nome }}</h2>
+          <p class="text-sm text-gray-600">R$ {{ favorito.produto.get_preco_display }}</p>
+        </a>
+      </div>
+    {% empty %}
+      <p>Você ainda não favoritou nenhum produto.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

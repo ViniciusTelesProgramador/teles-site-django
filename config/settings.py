@@ -159,3 +159,18 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 LOGIN_URL = '/login/'
 
 MERCADO_PAGO_ACCESS_TOKEN = 'APP_USR-1674847999465710-073109-022aeac07518cfafbd6cb079e2a62a79-533659685'  
+
+# settings.py
+RECAPTCHA_SITE_KEY = '6Lf-gpwrAAAAAFFYbf2wq560wRlkvneimQIgIE75'
+RECAPTCHA_SECRET_KEY = '6Lf-gpwrAAAAAOc-Xx1C1sk2uiNvKopOLnC8XmKA'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'no-reply@seusite.com'
+
+
+INSTALLED_APPS += ['axes']
+MIDDLEWARE += ['axes.middleware.AxesMiddleware']
+
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # horas bloqueado após limite

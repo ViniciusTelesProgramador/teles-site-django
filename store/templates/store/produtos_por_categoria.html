@@ -25,9 +25,24 @@
 
   <!-- Produtos -->
   <section class="md:col-span-3">
-    <h1 class="text-2xl font-semibold text-gray-800 mb-6">
+  <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+    <h1 class="text-2xl font-semibold text-gray-800 mb-2 md:mb-0">
       Produtos da categoria: {{ categoria.nome }}
     </h1>
+
+    <form method="get" class="flex items-center space-x-2">
+      {% if marca_selecionada %}
+        <input type="hidden" name="marca" value="{{ marca_selecionada }}">
+      {% endif %}
+      <label for="ordenar" class="text-sm text-gray-600">Ordenar por:</label>
+      <select name="ordenar" id="ordenar" onchange="this.form.submit()" class="border border-gray-300 rounded px-2 py-1 text-sm">
+        <option value="">-- Selecione --</option>
+        <option value="menor_preco" {% if ordenar == 'menor_preco' %}selected{% endif %}>Menor preço</option>
+        <option value="maior_preco" {% if ordenar == 'maior_preco' %}selected{% endif %}>Maior preço</option>
+      </select>
+    </form>
+  </div>
+
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {% for produto in produtos %}
