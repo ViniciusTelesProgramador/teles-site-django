@@ -107,10 +107,10 @@
     <a href="javascript:void(0);"
       class="toggle-favorito absolute top-2 right-2 text-xl"
       data-id="{{ produto.id }}">
-      <i class="fa {% if produto.id in produtos_favoritados %}fa-heart text-red-500{% else %}fa-heart-o text-gray-400{% endif %}"></i>
+      <i class="fa {% if produto.id in produtos_favoritados %}fa-solid fa-heart text-red-500{% else %}fa-regular fa-heart text-gray-400{% endif %}"></i>
     </a>
-
     {% endif %}
+
 
 
   </div>
@@ -120,6 +120,37 @@
 
 
 </div>
+{% if user.is_authenticated %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.toggle-favorito').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const produtoId = this.dataset.id;
+        const icon = this.querySelector('i');
+
+        fetch(`/toggle-favorito/${produtoId}/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+        if (data.favoritado) {
+          icon.classList.remove('fa-regular', 'text-gray-400');
+          icon.classList.add('fa-solid', 'text-red-500');
+        } else {
+          icon.classList.remove('fa-solid', 'text-red-500');
+          icon.classList.add('fa-regular', 'text-gray-400');
+        }
+        });
+      });
+    });
+  });
+</script>
+{% endif %}
+
 
 
 
