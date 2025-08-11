@@ -68,11 +68,11 @@
     }
     atualizarValorCarrinho();
   </script>
-  <!-- Container de toasts -->
-  <div id="toasts" class="position-fixed bottom-0 end-0 p-3" style="z-index:1080;"></div>
-
 
   <body class="bg-gray-100 d-flex flex-column min-vh-100">
+    <!-- Container de toasts -->
+  <div id="toasts" class="position-fixed bottom-0 end-0 p-3" style="z-index:1080;"></div>
+
 
     <!-- HEADER -->
     <header class="bg-[#1F2A85] text-white shadow-md">
@@ -298,20 +298,17 @@
     if (!btn) return;
 
     e.preventDefault();
-    const url  = btn.dataset.url;           // <- usa a rota correta
+    const url  = btn.dataset.url;
     const icon = btn.querySelector('i');
 
     fetch(url, {
       method: 'POST',
-      headers: {
-        'X-CSRFToken': csrftoken,
-        'X-Requested-With': 'XMLHttpRequest'
-      }
+      headers: { 'X-CSRFToken': csrftoken, 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(async r => {
       if (!r.ok) {
         const body = await r.text();
-        if (r.status === 403) alert('Sessão/CSRF inválido. Recarregue a página e tente de novo.');
+        if (r.status === 403) showToast('Sessão/CSRF inválido. Recarregue a página.', 'danger', 3000);
         console.error('Erro toggle favorito:', r.status, body);
         throw new Error('Toggle favorito falhou');
       }
@@ -323,12 +320,13 @@
       icon.classList.toggle('fa-regular', !on);
       icon.classList.toggle('text-red-500', on);
       icon.classList.toggle('text-gray-400', !on);
+      // ✅ Toast aqui, com "data" no escopo
+      showToast(on ? 'Produto adicionado aos favoritos' : 'Produto removido dos favoritos',
+                on ? 'success' : 'secondary');
     })
-    .catch(console.error);
-    const on = data.status === 'added' || data.favoritado === true;
-    showToast(on ? 'Produto adicionado aos favoritos' : 'Produto removido dos favoritos',
-          on ? 'success' : 'secondary');
-
+    .catch(() => {
+      showToast('Não foi possível atualizar o favorito. Tente novamente.', 'danger', 3000);
+    });
   });
 </script>
 {% endif %}
