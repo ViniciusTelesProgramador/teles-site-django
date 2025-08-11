@@ -32,6 +32,7 @@ urlpatterns = [
     path('ativar/<uidb64>/<token>/', activate_view, name='activate'),
     path('favorito/<int:produto_id>/', toggle_favorito_view, name='toggle_favorito'),
     path('favoritos/', views.favoritos_view, name='favoritos'),
+    path('produtos/', views.catalogo, name='catalogo'),
 
 ]
 

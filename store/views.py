@@ -28,6 +28,7 @@ from django.db.models import Q
 from .models import Produto
 from django.db.models import Q
 from .models import Produto, Categoria, Favorito
+from django.core.paginator import Paginator
 
 
 
@@ -611,3 +612,34 @@ def toggle_favorito_view(request, produto_id):
 def favoritos_view(request):
     favoritos = Favorito.objects.filter(user=request.user).select_related('produto')
     return render(request, 'store/favoritos.html', {'favoritos': favoritos})
+
+def catalogo(request):
+    ordenar = request.GET.get('ordenar', '-id')
+    ordem = {'preco': 'preco', '-preco': '-preco', 'nome': 'nome', '-id': '-id'}.get(ordenar, '-id')
+
+    qs = Produto.objects.filter(ativo=True).order_by(ordem)
+
+    q = request.GET.get('q')
+    if q:
+        qs = qs.filter(Q(nome__icontains=q) | Q(descricao__icontains=q))
+
+    paginator = Paginator(qs, 24)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    # ✅ calcule o range elíptico aqui:
+    page_range = paginator.get_elided_page_range(
+        number=page_obj.number, on_each_side=1, on_ends=1
+    )
+
+    fav_ids = set()
+    if request.user.is_authenticated:
+        fav_ids = set(Favorito.objects.filter(user=request.user)
+                                   .values_list('produto_id', flat=True))
+
+    return render(request, 'store/catalogo.html', {
+        'page_obj': page_obj,
+        'page_range': page_range,          # <-- passe para o template
+        'ordenar': ordenar,
+        'q': q or '',
+        'produtos_favoritados': fav_ids,
+    })
