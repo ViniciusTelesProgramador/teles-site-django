@@ -75,6 +75,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'store.context_processors.carrinho_total',
                 'store.context_processors.categorias_context',
+                'store.context_processors.favoritos_ids',
             ],
         },
     },
@@ -174,3 +175,4 @@ MIDDLEWARE += ['axes.middleware.AxesMiddleware']
 
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1  # horas bloqueado após limite
+

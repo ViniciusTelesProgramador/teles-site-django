@@ -17,3 +17,18 @@ def categorias_context(request):
         'categorias': Categoria.objects.all()
     }
 
+from .models import Favorito
+
+def favoritos_ids(request):
+    """
+    Disponibiliza a lista de IDs de produtos favoritados do usuário logado
+    em todos os templates como 'produtos_favoritados'.
+    """
+    if request.user.is_authenticated:
+        ids = list(
+            Favorito.objects.filter(user=request.user)
+            .values_list('produto_id', flat=True)
+        )
+    else:
+        ids = []
+    return {'produtos_favoritados': ids}

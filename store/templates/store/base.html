@@ -1,6 +1,6 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
+  <!DOCTYPE html>
+  <html lang="pt-br">
+  <head>
     {% load static %}
     <meta charset="UTF-8">
     <title>{% block title %}Minha Loja{% endblock %}</title>
@@ -8,284 +8,331 @@
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Bootstrap opcional -->
+    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    
+
     <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
 
     <style>
-    /* Garante que o submenu não desapareça bruscamente ao mover o mouse */
-    .group:hover .submenu {
-      opacity: 1 !important;
-      visibility: visible !important;
-    }
+      /* Submenu do topo */
+      .group:hover .submenu {
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
+
+      /* Largura variável p/ cada item do carrossel de categorias */
+      .categoriasSwiper .swiper-slide {
+        width: auto !important;
+      }
+
+      /* Setas do carrossel de categorias */
+      .cats-prev, .cats-next {
+        top: 50% !important;
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        background: #fff;
+        border-radius: 9999px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        color: #1F2A85 !important;
+        z-index: 10;
+      }
+      .cats-prev { left: -12px; }
+      .cats-next { right: -12px; }
+      .cats-prev::after, .cats-next::after {
+        font-size: 18px;
+        font-weight: 700;
+      }
     </style>
+    <meta name="csrf-token" content="{{ csrf_token }}">
 
-</head>
+  </head>
 
-{% if debug %}
-  <script src="http://localhost:8000/__reload__/reload.js"></script>
-{% endif %}
+  {% if debug %}
+    <script src="http://localhost:8000/__reload__/reload.js"></script>
+  {% endif %}
 
-<script>
-function atualizarValorCarrinho() {
-    fetch("{% url 'carrinho_total_ajax' %}")
+  <script>
+    function atualizarValorCarrinho() {
+      fetch("{% url 'carrinho_total_ajax' %}")
         .then(response => response.json())
         .then(data => {
-            const valor = data.total.toLocaleString('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-            });
-            document.getElementById("valor-carrinho").textContent = valor;
+          const valor = data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          const el = document.getElementById("valor-carrinho");
+          if (el) el.textContent = valor;
         });
-}
-atualizarValorCarrinho();
-</script>
+    }
+    atualizarValorCarrinho();
+  </script>
+  <!-- Container de toasts -->
+  <div id="toasts" class="position-fixed bottom-0 end-0 p-3" style="z-index:1080;"></div>
 
-<body class="bg-gray-100 d-flex flex-column min-vh-100">
 
-<!-- HEADER SUPERIOR -->
-<!-- HEADER SUPERIOR -->
-<header class="bg-[#1F2A85] text-white shadow-md">
-  <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-24">
+  <body class="bg-gray-100 d-flex flex-column min-vh-100">
 
-    <!-- Logo -->
-    <a href="/" class="flex items-center space-x-2">
-      <img src="{% static 'img/LOGO TELES1.png' %}" alt="Logo Teles Acabamento" class="h-20 w-auto object-contain">
-    </a>
+    <!-- HEADER -->
+    <header class="bg-[#1F2A85] text-white shadow-md">
+      <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-24">
+        <!-- Logo -->
+        <a href="/" class="flex items-center space-x-2">
+          <img src="{% static 'img/LOGO TELES1.png' %}" alt="Logo Teles Acabamento" class="h-20 w-auto object-contain">
+        </a>
 
-    <!-- Campo de Busca -->
-    <div class="flex-1 mx-6">
-      <form method="GET" action="{% url 'buscar_produtos' %}" class="relative w-full">
-        <input type="text" name="q" placeholder="O que você procura?"
-               class="w-full rounded-md px-4 py-2 text-black focus:outline-none shadow-inner" required>
-        <button type="submit"
-                class="absolute right-0 top-0 h-full px-4 bg-[#FFD400] rounded-r-md text-black hover:bg-yellow-400">
-          <i class="fas fa-search"></i>
-        </button>
-      </form>
-    </div>
+        <!-- Busca -->
+        <div class="flex-1 mx-6">
+          <form method="GET" action="{% url 'buscar_produtos' %}" class="relative w-full">
+            <input type="text" name="q" placeholder="O que você procura?"
+                  class="w-full rounded-md px-4 py-2 text-black focus:outline-none shadow-inner" required>
+            <button type="submit"
+                    class="absolute right-0 top-0 h-full px-4 bg-[#FFD400] rounded-r-md text-black hover:bg-yellow-400">
+              <i class="fas fa-search"></i>
+            </button>
+          </form>
+        </div>
 
-    <!-- Conta e Carrinho -->
-    <div class="flex items-center space-x-8 text-sm">
-
-      <!-- Conta -->
-      {% if user.is_authenticated %}
-      <div class="flex items-center space-x-2">
-        <i class="fas fa-user-circle text-2xl text-white"></i>
-        <div class="flex flex-col leading-4">
-          <span class="font-semibold text-sm">{{ user.first_name|default:user.username }}</span>
-          <div class="flex gap-2 text-xs">
-            <a href="{% url 'painel_usuario' %}" class="hover:text-yellow-300 transition">Minha Conta</a>
-            <span class="h-4 border-l border-white"></span>
-            <a href="{% url 'logout' %}" class="hover:text-yellow-300 transition">Sair</a>
+        <!-- Conta e Carrinho -->
+        <div class="flex items-center space-x-8 text-sm">
+          {% if user.is_authenticated %}
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-user-circle text-2xl text-white"></i>
+            <div class="flex flex-col leading-4">
+              <span class="font-semibold text-sm">{{ user.first_name|default:user.username }}</span>
+              <div class="flex gap-2 text-xs">
+                <a href="{% url 'painel_usuario' %}" class="hover:text-yellow-300 transition">Minha Conta</a>
+                <span class="h-4 border-l border-white"></span>
+                <a href="{% url 'logout' %}" class="hover:text-yellow-300 transition">Sair</a>
+              </div>
+            </div>
           </div>
+          {% else %}
+          <a href="{% url 'login' %}" class="flex items-center gap-1 hover:text-yellow-300 transition">
+            <i class="fas fa-user-circle text-xl"></i> Entrar
+          </a>
+          {% endif %}
+
+          <a href="{% url 'carrinho' %}" class="relative flex items-center gap-2 hover:text-yellow-300 transition">
+            <i class="fas fa-shopping-cart text-2xl"></i>
+            <span class="font-semibold" id="valor-carrinho">R$ {{ valor_total_carrinho|floatformat:2 }}</span>
+            {% if quantidade_total_carrinho > 0 %}
+            <span class="absolute -top-2 -right-3 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
+              {{ quantidade_total_carrinho }}
+            </span>
+            {% endif %}
+          </a>
         </div>
       </div>
-      {% else %}
-      <a href="{% url 'login' %}" class="flex items-center gap-1 hover:text-yellow-300 transition">
-        <i class="fas fa-user-circle text-xl"></i> Entrar
-      </a>
-      {% endif %}
-      
+    </header>
 
-      <!-- Carrinho -->
-      <a href="{% url 'carrinho' %}" class="relative flex items-center gap-2 hover:text-yellow-300 transition">
-        <i class="fas fa-shopping-cart text-2xl"></i>
-        <span class="font-semibold">R$ {{ valor_total_carrinho|floatformat:2 }}</span>
-        {% if quantidade_total_carrinho > 0 %}
-        <span class="absolute -top-2 -right-3 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
-          {{ quantidade_total_carrinho }}
-        </span>
-        {% endif %}
-      </a>
-    </div>
-  </div>
-</header>
-
-
-
-<!-- MENU PRINCIPAL -->
-<nav class="bg-[#142165] text-white">
-  <div class="max-w-7xl mx-auto px-4">
-    <ul class="flex space-x-6 py-3 text-sm font-medium">
-    <li class="relative group">
-      <a href="#" class="flex items-center gap-1 {% if request.path|slice:":10" == "/categoria" %}text-[#FFD400]{% endif %} hover:text-[#FFD400]">
-        CATEGORIAS <i class="fas fa-chevron-down text-xs"></i>
-      </a>
-        <ul class="submenu absolute left-0 mt-3 bg-white text-black rounded-xl shadow-lg z-50 w-60 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity transition-[visibility] duration-200 delay-150 group-hover:delay-0 border border-gray-200">
-        {% for categoria in categorias %}
-          <li>
-            <a href="{% url 'produtos_por_categoria' categoria.id %}"
-              class="block px-4 py-3 text-sm hover:bg-[#f8f8f8] hover:text-[#1F2A85] transition-colors duration-200">
-              {{ categoria.nome }}
+    <!-- MENU -->
+    <nav class="bg-[#142165] text-white">
+      <div class="max-w-7xl mx-auto px-4">
+        <ul class="flex space-x-6 py-3 text-sm font-medium">
+          <li class="relative group">
+            <a href="#" class="flex items-center gap-1 {% if request.path|slice:":10" == "/categoria" %}text-[#FFD400]{% endif %} hover:text-[#FFD400]">
+              CATEGORIAS <i class="fas fa-chevron-down text-xs"></i>
             </a>
+            <ul class="submenu absolute left-0 mt-3 bg-white text-black rounded-xl shadow-lg z-50 w-60 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity transition-[visibility] duration-200 delay-150 group-hover:delay-0 border border-gray-200">
+              {% for categoria in categorias %}
+              <li>
+                <a href="{% url 'produtos_por_categoria' categoria.id %}"
+                  class="block px-4 py-3 text-sm hover:bg-[#f8f8f8] hover:text-[#1F2A85] transition-colors duration-200">
+                  {{ categoria.nome }}
+                </a>
+              </li>
+              {% empty %}
+              <li class="px-4 py-3 text-gray-500 text-sm">Nenhuma categoria cadastrada</li>
+              {% endfor %}
+            </ul>
           </li>
-        {% empty %}
-          <li class="px-4 py-3 text-gray-500 text-sm">Nenhuma categoria cadastrada</li>
-        {% endfor %}
-      </ul>
-    </li>
 
+          <li class="relative group">
+            <a href="#" class="flex items-center gap-1 hover:text-[#FFD400]">
+              CONTATO <i class="fas fa-chevron-down text-xs"></i>
+            </a>
+            <ul class="absolute left-0 mt-2 bg-white text-black rounded shadow-lg z-50 w-64 hidden group-hover:block transition duration-200">
+              <li><a href="{% url 'contato' %}" class="block px-4 py-2 hover:bg-gray-200">Contato</a></li>
+              <li><a href="{% url 'faq' %}" class="block px-4 py-2 hover:bg-gray-200">Perguntas Frequentes</a></li>
+              <li><a href="{% url 'politica_privacidade' %}" class="block px-4 py-2 hover:bg-gray-200">Política de Privacidade</a></li>
+              <li><a href="{% url 'termos_uso' %}" class="block px-4 py-2 hover:bg-gray-200">Termos de Uso</a></li>
+            </ul>
+          </li>
 
-      <li class="relative group">
-        <a href="#" class="flex items-center gap-1 hover:text-[#FFD400]">
-          CONTATO <i class="fas fa-chevron-down text-xs"></i>
-        </a>
-        <ul class="absolute left-0 mt-2 bg-white text-black rounded shadow-lg z-50 w-64 hidden group-hover:block transition duration-200">
-          <li>
-            <a href="{% url 'contato' %}" class="block px-4 py-2 hover:bg-gray-200">Contato</a>
-          </li>
-          <li>
-            <a href="{% url 'faq' %}" class="block px-4 py-2 hover:bg-gray-200">Perguntas Frequentes</a>
-          </li>
-          <li>
-            <a href="{% url 'politica_privacidade' %}" class="block px-4 py-2 hover:bg-gray-200">Política de Privacidade</a>
-          </li>
-          <li>
-            <a href="{% url 'termos_uso' %}" class="block px-4 py-2 hover:bg-gray-200">Termos de Uso</a>
-          </li>
+          <li><a href="{% url 'nossas_lojas' %}" class="hover:text-[#FFD400]">NOSSAS LOJAS</a></li>
+          <li><a href="{% url 'ofertas' %}" class="hover:text-[#FFD400]">OFERTAS</a></li>
+          <li><a href="{% url 'favoritos' %}" class="hover:text-[#FFD400]">MEUS FAVORITOS</a></li>
         </ul>
-      </li>
-      <li><a href="{% url 'nossas_lojas' %}" class="hover:text-[#FFD400]">NOSSAS LOJAS</a></li>
-      <li><a href="{% url 'ofertas' %}" class="hover:text-[#FFD400]">OFERTAS</a></li>
-      <li><a href="{% url 'favoritos' %}" class="hover:text-[#FFD400]">MEUS FAVORITOS</a>
-</li>
-    </ul>
-  </div>
-</nav>
+      </div>
+    </nav>
 
-<!-- CONTEÚDO -->
-<main class="container my-4 flex-grow-1">
-    {% block content %}
-    {% endblock %}
-</main>
+    <!-- CONTEÚDO -->
+    <main class="container my-4 flex-grow-1">
+      {% block content %}{% endblock %}
+    </main>
 
-<!-- RODAPÉ -->
-<!-- NOVO RODAPÉ MODERNO -->
-<footer class="bg-[#0B0736] text-white pt-10 pb-4 mt-16">
-  <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 text-sm">
-    
-    <!-- LOGO -->
-    <div class="flex flex-col items-start">
-      <img src="{% static 'img/LOGO TELES1.png' %}" alt="Logo Teles" class="h-14 mb-2">
-    </div>
+    <!-- RODAPÉ -->
+    <footer class="bg-[#0B0736] text-white pt-10 pb-4 mt-16">
+      <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 text-sm">
+        <div class="flex flex-col items-start">
+          <img src="{% static 'img/LOGO TELES1.png' %}" alt="Logo Teles" class="h-14 mb-2">
+        </div>
 
-    <!-- POLÍTICAS -->
-    <div>
-      <h4 class="text-[#FFD400] font-semibold mb-2">Políticas</h4>
-      <ul class="space-y-1">
-        <li><a href="{% url 'politica_privacidade' %}" class="hover:underline">Política de Privacidade</a></li>
-        <li><a href="{% url 'termos_uso' %}" class="hover:underline">Termos de Uso</a></li>
-      </ul>
-    </div>
+        <div>
+          <h4 class="text-[#FFD400] font-semibold mb-2">Políticas</h4>
+          <ul class="space-y-1">
+            <li><a href="{% url 'politica_privacidade' %}" class="hover:underline">Política de Privacidade</a></li>
+            <li><a href="{% url 'termos_uso' %}" class="hover:underline">Termos de Uso</a></li>
+          </ul>
+        </div>
 
-    <!-- ATENDIMENTO -->
-    <div>
-      <h4 class="text-[#FFD400] font-semibold mb-2">Atendimento</h4>
-      <ul class="space-y-1">
-        <li><a href="{% url 'contato' %}" class="hover:underline">Contato</a></li>
-        <li><a href="{% url 'faq' %}" class="hover:underline">Perguntas Frequentes</a></li>
-      </ul>
-    </div>
+        <div>
+          <h4 class="text-[#FFD400] font-semibold mb-2">Atendimento</h4>
+          <ul class="space-y-1">
+            <li><a href="{% url 'contato' %}" class="hover:underline">Contato</a></li>
+            <li><a href="{% url 'faq' %}" class="hover:underline">Perguntas Frequentes</a></li>
+          </ul>
+        </div>
 
-    <!-- FORMAS DE PAGAMENTO -->
-    <div class="flex space-x-2 mt-3">
-      <img src="{% static 'img/icones/visa.png' %}" alt="Visa" class="h-5">
-      <img src="{% static 'img/icones/master.png' %}" alt="Master" class="h-5">
-      <img src="{% static 'img/icones/elo.png' %}" alt="Elo" class="h-5">
-      <img src="{% static 'img/icones/credishop.png' %}" alt="Credishop" class="h-5">
-      <img src="{% static 'img/icones/pix.png' %}" alt="Pix" class="h-5">
-    </div>
-  </div>
+        <div class="flex space-x-2 mt-3">
+          <img src="{% static 'img/icones/visa.png' %}" alt="Visa" class="h-5">
+          <img src="{% static 'img/icones/master.png' %}" alt="Master" class="h-5">
+          <img src="{% static 'img/icones/elo.png' %}" alt="Elo" class="h-5">
+          <img src="{% static 'img/icones/credishop.png' %}" alt="Credishop" class="h-5">
+          <img src="{% static 'img/icones/pix.png' %}" alt="Pix" class="h-5">
+        </div>
+      </div>
 
-  <!-- BARRA FINAL -->
-  <div class="border-t border-gray-700 mt-6 pt-4 text-center text-xs">
-    <p>Teles Construções - O Leão dos preços baixos - CNPJ 00.464.497/0001-07</p>
-    <p>Avenida Guexenduba, 1506 - Bairro de Fátima, São Luís - MA, 65015-560</p>
-    <div class="flex justify-center space-x-4 mt-2">
-      <a href="https://www.facebook.com/Teles.acabamentos" class="hover:text-[#FFD400]"><i class="fab fa-facebook"></i></a>
-      <a href="https://www.instagram.com/telesacabamento/" class="hover:text-[#FFD400]"><i class="fab fa-instagram"></i></a>
-    </div>
-  </div>
-</footer>
+      <div class="border-t border-gray-700 mt-6 pt-4 text-center text-xs">
+        <p>Teles Construções - O Leão dos preços baixos - CNPJ 00.464.497/0001-07</p>
+        <p>Avenida Guexenduba, 1506 - Bairro de Fátima, São Luís - MA, 65015-560</p>
+        <div class="flex justify-center space-x-4 mt-2">
+          <a href="https://www.facebook.com/Teles.acabamentos" class="hover:text-[#FFD400]"><i class="fab fa-facebook"></i></a>
+          <a href="https://www.instagram.com/telesacabamento/" class="hover:text-[#FFD400]"><i class="fab fa-instagram"></i></a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function showToast(text, variant = 'success', delay = 2200) {
+      const container = document.getElementById('toasts');
+      const id = 't' + Date.now();
+
+      container.insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="toast align-items-center text-bg-${variant} border-0 mb-2"
+            role="alert" aria-live="assertive" aria-atomic="true"
+            data-bs-delay="${delay}">
+          <div class="d-flex">
+            <div class="toast-body">${text}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast" aria-label="Fechar"></button>
+          </div>
+        </div>
+      `);
+
+      const el = document.getElementById(id);
+      const toast = new bootstrap.Toast(el);
+      toast.show();
+      el.addEventListener('hidden.bs.toast', () => el.remove());
+    }
+    </script>
 
 
+    <!-- WhatsApp -->
+    <a href="https://wa.me/5598999999999?text=Olá!%20Gostaria%20de%20atendimento."
+      target="_blank" rel="noopener noreferrer"
+      class="fixed bottom-4 right-4 z-50 bg-green-500 hover:opacity-80 text-white rounded-full shadow-lg p-4 transition-opacity duration-200"
+      title="Fale conosco no WhatsApp">
+      <i class="fab fa-whatsapp fa-2x"></i>
+    </a>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Swiper JS -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 
-<!-- Botão flutuante WhatsApp -->
-<a href="https://wa.me/5598999999999?text=Olá!%20Gostaria%20de%20atendimento."
-   target="_blank"
-   rel="noopener noreferrer"
-   class="fixed bottom-4 right-4 z-50 bg-green-500 hover:opacity-80 text-white rounded-full shadow-lg p-4 transition-opacity duration-200"
-   title="Fale conosco no WhatsApp">
-    <i class="fab fa-whatsapp fa-2x"></i>
-</a>
-
-<!-- Swiper JS -->
-<script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
-
-<!-- Swiper Init -->
-<script>
-  var swiper = new Swiper(".mySwiper", {
-    loop: true,
-    autoplay: {
-      delay: 4000,
-      disableOnInteraction: false,
-    },
-    pagination: {
-      el: ".swiper-pagination",
-      clickable: true,
-    },
-    navigation: {
-      nextEl: ".swiper-button-next",
-      prevEl: ".swiper-button-prev",
-    },
-  });
-</script>
-
-<!-- Swiper (se já tiver no banner, não precisa repetir) -->
-<script>
-  new Swiper(".categoriasSwiper", {
-    slidesPerView: 4,
-    spaceBetween: 20,
-    breakpoints: {
-      640: { slidesPerView: 5 },
-      768: { slidesPerView: 6 },
-      1024: { slidesPerView: 8 },
-    },
-  });
-</script>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.toggle-favorito').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const produtoId = this.dataset.id;
-        const icon = this.querySelector('i');
-
-        fetch(`/favorito/${produtoId}/`)
-          .then(response => response.json())
-          .then(data => {
-            if (data.status === 'added') {
-              icon.classList.remove('text-gray-400');
-              icon.classList.add('text-red-500');
-            } else {
-              icon.classList.remove('text-red-500');
-              icon.classList.add('text-gray-400');
-            }
+    <!-- Swiper do banner -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const banner = document.querySelector('.mySwiper');
+        if (banner && !banner.swiper) {
+          new Swiper(banner, {
+            loop: true,
+            autoplay: { delay: 4000, disableOnInteraction: false },
+            pagination: { el: '.swiper-pagination', clickable: true },
+            navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
           });
+        }
       });
-    });
+    </script>
+
+    <!-- Swiper das categorias -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const el = document.querySelector('.categoriasSwiper');
+        if (el && !el.swiper) {
+          new Swiper(el, {
+            slidesPerView: 'auto',
+            spaceBetween: 16,
+            freeMode: true,
+            watchOverflow: true,
+            navigation: { nextEl: '.cats-next', prevEl: '.cats-prev' },
+          });
+        }
+      });
+    </script>
+
+    <!-- Toggle favorito (delegação de evento, genérico p/ todas as páginas) -->
+{% if user.is_authenticated %}
+<script>
+  function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.content : null;
+  }
+  const csrftoken = getCsrfToken();
+
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.toggle-favorito');
+    if (!btn) return;
+
+    e.preventDefault();
+    const url  = btn.dataset.url;           // <- usa a rota correta
+    const icon = btn.querySelector('i');
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrftoken,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(async r => {
+      if (!r.ok) {
+        const body = await r.text();
+        if (r.status === 403) alert('Sessão/CSRF inválido. Recarregue a página e tente de novo.');
+        console.error('Erro toggle favorito:', r.status, body);
+        throw new Error('Toggle favorito falhou');
+      }
+      return r.json();
+    })
+    .then(data => {
+      const on = data.status === 'added' || data.favoritado === true;
+      icon.classList.toggle('fa-solid', on);
+      icon.classList.toggle('fa-regular', !on);
+      icon.classList.toggle('text-red-500', on);
+      icon.classList.toggle('text-gray-400', !on);
+    })
+    .catch(console.error);
+    const on = data.status === 'added' || data.favoritado === true;
+    showToast(on ? 'Produto adicionado aos favoritos' : 'Produto removido dos favoritos',
+          on ? 'success' : 'secondary');
+
   });
 </script>
+{% endif %}
 
-</body>
-</html>
 
+  </body>
+  </html>

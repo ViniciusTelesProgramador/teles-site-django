@@ -24,14 +24,42 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
+from django.db.models import Q
+from .models import Produto
+from django.db.models import Q
+from .models import Produto, Categoria, Favorito
 
 
 
 
 
 def home(request):
+    # lista completa usada no grid principal
     produtos = Produto.objects.all()
-    return render(request, 'store/home.html', {'produtos': produtos})
+
+    # menu e carrossel de categorias
+    categorias = Categoria.objects.all()
+
+    # carrosséis
+    ofertas = Produto.objects.filter(em_oferta=True)[:12]   # até 12 itens
+    novidades = Produto.objects.order_by('-id')[:12]        # mais recentes
+
+    # ids favoritados do usuário (pra pintar os corações ao carregar a página)
+    fav_ids = set()
+    if request.user.is_authenticated:
+        fav_ids = set(
+            Favorito.objects.filter(user=request.user)
+                            .values_list('produto_id', flat=True)
+        )
+
+    return render(request, 'store/home.html', {
+        'produtos': produtos,
+        'categorias': categorias,
+        'ofertas': ofertas,
+        'novidades': novidades,
+        'produtos_favoritados': fav_ids,
+    })
+
 
 
 def produto_detail(request, produto_id):
@@ -373,11 +401,7 @@ def register_view(request):
     })
 
 
-from django.db.models import Q
-from .models import Produto
 
-from django.db.models import Q
-from .models import Produto, Categoria
 
 def buscar_produtos(request):
     query = request.GET.get('q')
