@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")  # ← carrega o .env da raiz
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,7 +31,9 @@ SECRET_KEY = 'django-insecure-x&mdo=c0j0h0-yr3pehk!8&)pqo220su-bz(bf^ei4o*0)2%$l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", ".ngrok-free.app"]
+CSRF_TRUSTED_ORIGINS = ["https://*.ngrok-free.app"]
+
 
 
 # Application definition
@@ -159,7 +165,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 LOGIN_URL = '/login/'
 
-MERCADO_PAGO_ACCESS_TOKEN = 'APP_USR-1674847999465710-073109-022aeac07518cfafbd6cb079e2a62a79-533659685'  
+MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN_TEST", "")
+PUBLIC_URL = os.getenv("PUBLIC_URL", "http://127.0.0.1:8000")
 
 # settings.py
 RECAPTCHA_SITE_KEY = '6Lf-gpwrAAAAAFFYbf2wq560wRlkvneimQIgIE75'

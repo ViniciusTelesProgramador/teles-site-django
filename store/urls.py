@@ -33,7 +33,8 @@ urlpatterns = [
     path('favorito/<int:produto_id>/', toggle_favorito_view, name='toggle_favorito'),
     path('favoritos/', views.favoritos_view, name='favoritos'),
     path('produtos/', views.catalogo, name='catalogo'),
-
+    path("webhooks/mercadopago/", views.mp_webhook, name="mp_webhook"),
+    
 ]
 
 from django.contrib.auth import views as auth_views

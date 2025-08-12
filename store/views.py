@@ -29,6 +29,9 @@ from .models import Produto
 from django.db.models import Q
 from .models import Produto, Categoria, Favorito
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_http_methods
+from django.shortcuts import redirect, render
+from .models import Pedido, PedidoItem
 
 
 
@@ -492,69 +495,161 @@ def editar_perfil_view(request):
         'profile': profile
     })
 
+# store/views.py
+
 
 @login_required
-@require_POST
+@require_http_methods(["GET","POST"])
 def checkout_mercado_pago(request):
-    sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+    sdk = mercadopago.SDK(settings.MP_ACCESS_TOKEN)
 
     carrinho = request.session.get("carrinho", {})
     if not carrinho:
         messages.error(request, "Carrinho vazio.")
         return redirect("carrinho")
 
-    total = sum(item['preco'] * item['quantidade'] for item in carrinho.values())
+    total = sum(item["preco"] * item["quantidade"] for item in carrinho.values())
 
-    # ✅ Fora do dicionário, ANTES do preference_data
-    ngrok_base = "https://26bb4ffc23fe.ngrok-free.app"
+    # dados do formulário (ajuste os names conforme seu HTML)
+    nome = request.POST.get("nome") or (request.user.get_full_name() or request.user.username)
+    email = request.POST.get("email") or (request.user.email or "sem-email@local.test")
+    endereco = request.POST.get("endereco") or ""
+    cep = request.POST.get("cep") or ""
+    opcao_entrega = request.POST.get("opcao_entrega")  # "entrega" ou "retirada"
+    loja_retirada = request.POST.get("loja_retirada")  # se existir
+
+    # 1) cria o pedido local
+    pedido = Pedido.objects.create(
+        usuario=request.user,
+        nome=nome,
+        email=email,
+        endereco=endereco,
+        cep=cep,
+        total=total,
+        opcao_entrega=opcao_entrega,
+        loja_retirada=loja_retirada,
+        status="aguardando",
+    )
+
+    # 2) cria os itens
+    for item in carrinho.values():
+        PedidoItem.objects.create(
+            pedido=pedido,
+            produto_nome=item["nome"],          # ajuste ao seu dicionário
+            preco=item["preco"],
+            quantidade=item["quantidade"],
+        )
+
+    # 3) define external_reference
+    pedido.external_reference = f"pedido_{pedido.id}"
+    pedido.save(update_fields=["external_reference"])
+
+    public = settings.PUBLIC_URL.rstrip("/")
 
     preference_data = {
-        "items": [
-            {
-                "title": "Pedido Teles",
-                "quantity": 1,
-                "currency_id": "BRL",
-                "unit_price": float(total),
-            }
-        ],
+        "items": [{
+            "title": f"Pedido #{pedido.id} - Teles",
+            "quantity": 1,
+            "currency_id": "BRL",
+            "unit_price": float(total),
+        }],
         "back_urls": {
-            "success": ngrok_base + reverse("pagamento_sucesso"),
-            "failure": ngrok_base + reverse("pagamento_erro"),
-            "pending": ngrok_base + reverse("pagamento_pendente"),
+            "success": f"{public}{reverse('pagamento_sucesso')}?pedido={pedido.id}",
+            "failure": f"{public}{reverse('pagamento_erro')}?pedido={pedido.id}",
+            "pending": f"{public}{reverse('pagamento_pendente')}?pedido={pedido.id}",
         },
         "auto_return": "approved",
+        "notification_url": f"{public}/webhooks/mercadopago/",
+        "statement_descriptor": "TELES CONSTRUCOES",
+        "payment_methods": {"installments": 1},
+        "external_reference": pedido.external_reference,
     }
 
-    try:
-        preference_response = sdk.preference().create(preference_data)
-        print("🟢 Preferência Mercado Pago:", preference_response)
+    pref = sdk.preference().create(preference_data)["response"]
+    return redirect(pref["init_point"])
 
-        if not preference_response or "response" not in preference_response:
-            messages.error(request, "Erro ao criar preferência de pagamento.")
-            return redirect("checkout")
-
-        preference = preference_response["response"]
-
-        if "init_point" not in preference:
-            messages.error(request, "URL de pagamento não encontrada.")
-            return redirect("checkout")
-
-        return redirect(preference["init_point"])
-
-    except Exception as e:
-        messages.error(request, f"Erro ao conectar com Mercado Pago: {str(e)}")
-        return redirect("checkout")
     
-from django.shortcuts import render
-
 def pagamento_sucesso(request):
-    return render(request, "pagamento_sucesso.html")
+    pedido_id = request.GET.get("pedido")
+    return render(request, "store/pagamento_sucesso.html", {"pedido_id": pedido_id})
 
 def pagamento_erro(request):
-    return render(request, "pagamento_erro.html")
+    return render(request, "store/pagamento_erro.html")
 
 def pagamento_pendente(request):
-    return render(request, "pagamento_pendente.html")
+    return render(request, "store/pagamento_pendente.html")
+
+
+import json
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+# store/views.py (substitua o mp_webhook atual)
+
+import json
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Pedido  # <-- importa o Pedido
+import mercadopago
+from django.conf import settings
+
+@csrf_exempt
+def mp_webhook(request):
+    """
+    Webhook do Mercado Pago: atualiza o Pedido com base no external_reference.
+    Idempotente: não processa duas vezes o mesmo payment_id.
+    """
+    try:
+        payload = json.loads(request.body.decode() or "{}")
+
+        # 1) obtém o payment_id (novo/antigo formato)
+        payment_id = payload.get("data", {}).get("id")
+        if not payment_id and request.GET.get("topic") == "payment":
+            payment_id = request.GET.get("id")
+
+        if not payment_id:
+            print("Webhook sem payment_id:", payload)
+            return HttpResponse(status=200)
+
+        # 2) consulta o pagamento no MP
+        sdk = mercadopago.SDK(settings.MP_ACCESS_TOKEN)
+        info = sdk.payment().get(payment_id)["response"]
+
+        status = info.get("status")                  # "approved" | "pending" | "rejected"
+        external_ref = info.get("external_reference")
+
+        if not external_ref:
+            print("Pagamento sem external_reference:", info)
+            return HttpResponse(status=200)
+
+        # 3) localiza o pedido pelo external_reference
+        try:
+            pedido = Pedido.objects.get(external_reference=external_ref)
+        except Pedido.DoesNotExist:
+            print("Pedido não encontrado para external_reference:", external_ref)
+            return HttpResponse(status=200)
+
+        # 4) idempotência: se já processou esse payment_id, não faz de novo
+        if pedido.mp_payment_id == str(payment_id):
+            return HttpResponse(status=200)
+
+        pedido.mp_payment_id = str(payment_id)
+
+        # 5) atualiza status interno
+        if status == "approved":
+            pedido.status = "pago"
+        elif status == "pending":
+            pedido.status = "pendente"
+        else:
+            pedido.status = "recusado"
+
+        pedido.save()
+        print(f"[WEBHOOK] Pedido {pedido.id} → {pedido.status} (payment_id={payment_id})")
+
+    except Exception as e:
+        print("Webhook erro:", e)
+
+    # o MP espera 200 sempre que você recebeu/entendeu
+    return HttpResponse(status=200)
 
 
 def send_activation_email(request, user):
@@ -613,33 +708,95 @@ def favoritos_view(request):
     favoritos = Favorito.objects.filter(user=request.user).select_related('produto')
     return render(request, 'store/favoritos.html', {'favoritos': favoritos})
 
+from decimal import Decimal, InvalidOperation
+from django.db.models import Q, Case, When, F, DecimalField
+from django.core.paginator import Paginator
+from .models import Produto, Categoria, Marca, Favorito  # ajuste o import de Marca se o nome for diferente
+
+def _parse_decimal(value):
+    if not value:
+        return None
+    try:
+        # aceita "9,90" ou "9.90"
+        return Decimal(str(value).replace(',', '.'))
+    except (InvalidOperation, ValueError):
+        return None
+
 def catalogo(request):
     ordenar = request.GET.get('ordenar', '-id')
-    ordem = {'preco': 'preco', '-preco': '-preco', 'nome': 'nome', '-id': '-id'}.get(ordenar, '-id')
+    ordem = {'preco': 'preco_efetivo', '-preco': '-preco_efetivo', 'nome': 'nome', '-id': '-id'}.get(ordenar, '-id')
 
-    qs = Produto.objects.filter(ativo=True).order_by(ordem)
+    categoria_id = request.GET.get('categoria')  # id único
+    marcas_ids   = request.GET.getlist('marca')  # múltiplas
+    preco_min    = _parse_decimal(request.GET.get('preco_min'))
+    preco_max    = _parse_decimal(request.GET.get('preco_max'))
+    so_ofertas   = request.GET.get('oferta') == '1'
+    q            = request.GET.get('q', '').strip()
 
-    q = request.GET.get('q')
+    qs = Produto.objects.filter(ativo=True)
+
+    if categoria_id:
+        qs = qs.filter(categoria_id=categoria_id)
+
+    if marcas_ids:
+        qs = qs.filter(marca_id__in=marcas_ids)
+
+    if so_ofertas:
+        qs = qs.filter(em_oferta=True)
+
     if q:
         qs = qs.filter(Q(nome__icontains=q) | Q(descricao__icontains=q))
 
-    paginator = Paginator(qs, 24)
-    page_obj = paginator.get_page(request.GET.get('page'))
-
-    # ✅ calcule o range elíptico aqui:
-    page_range = paginator.get_elided_page_range(
-        number=page_obj.number, on_each_side=1, on_ends=1
+    # preço efetivo: usa preco_novo quando em oferta, senão preco
+    qs = qs.annotate(
+        preco_efetivo=Case(
+            When(em_oferta=True, then=F('preco_novo')),
+            default=F('preco'),
+            output_field=DecimalField(max_digits=10, decimal_places=2)
+        )
     )
+
+    if preco_min is not None:
+        qs = qs.filter(preco_efetivo__gte=preco_min)
+    if preco_max is not None:
+        qs = qs.filter(preco_efetivo__lte=preco_max)
+
+    qs = qs.order_by(ordem, '-id')
+
+    paginator = Paginator(qs, 24)
+    page_obj  = paginator.get_page(request.GET.get('page'))
+
+    # opções do sidebar
+    categorias = Categoria.objects.all().order_by('nome')
+    if categoria_id:
+        marcas = Marca.objects.filter(produto__ativo=True, produto__categoria_id=categoria_id).distinct().order_by('nome')
+    else:
+        marcas = Marca.objects.filter(produto__ativo=True).distinct().order_by('nome')
+
+    # range de páginas “elíptico”
+    page_range = paginator.get_elided_page_range(number=page_obj.number, on_each_side=1, on_ends=1)
+
+    # mantemos os params (sem 'page') para a paginação
+    params = request.GET.copy()
+    params.pop('page', None)
+    query_without_page = params.urlencode()
 
     fav_ids = set()
     if request.user.is_authenticated:
-        fav_ids = set(Favorito.objects.filter(user=request.user)
-                                   .values_list('produto_id', flat=True))
+        fav_ids = set(Favorito.objects.filter(user=request.user).values_list('produto_id', flat=True))
 
     return render(request, 'store/catalogo.html', {
         'page_obj': page_obj,
-        'page_range': page_range,          # <-- passe para o template
+        'page_range': page_range,
         'ordenar': ordenar,
-        'q': q or '',
+        'q': q,
+        'categorias': categorias,
+        'marcas': marcas,
+        'categoria_id': str(categoria_id or ''),
+        'marcas_ids': set(marcas_ids),
+        'preco_min': request.GET.get('preco_min', ''),
+        'preco_max': request.GET.get('preco_max', ''),
+        'so_ofertas': so_ofertas,
+        'query_without_page': query_without_page,
         'produtos_favoritados': fav_ids,
     })

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+
 class Categoria(models.Model):
     nome = models.CharField(max_length=100)
     icone = models.ImageField(upload_to='icones_categorias/', blank=True, null=True)
@@ -35,20 +36,41 @@ class Produto(models.Model):
         return self.nome
 
 
+# store/models.py
+
+
 class Pedido(models.Model):
+    STATUS = [
+        ("aguardando", "Aguardando pagamento"),
+        ("pago", "Pago"),
+        ("pendente", "Pendente"),
+        ("recusado", "Recusado"),
+    ]
+
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     nome = models.CharField(max_length=100)
     email = models.EmailField()
     endereco = models.TextField()
     cep = models.CharField(max_length=10, blank=True, null=True)
     criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
     total = models.DecimalField(max_digits=10, decimal_places=2)
+
     loja_retirada = models.CharField(max_length=100, blank=True, null=True)
-    opcao_entrega = models.CharField(max_length=10, choices=[("entrega", "Entrega"), ("retirada", "Retirada")], blank=True, null=True)  # NOVO
+    opcao_entrega = models.CharField(
+        max_length=10,
+        choices=[("entrega", "Entrega"), ("retirada", "Retirada")],
+        blank=True, null=True
+    )
+
+    # >>> adicionados p/ integrar com MP
+    status = models.CharField(max_length=20, choices=STATUS, default="aguardando")
+    external_reference = models.CharField(max_length=64, unique=True, blank=True, null=True)
+    mp_payment_id = models.CharField(max_length=64, blank=True, null=True)
 
     def __str__(self):
         return f"Pedido {self.id} - {self.nome}"
-
 
 
 class PedidoItem(models.Model):
@@ -56,10 +78,10 @@ class PedidoItem(models.Model):
     produto_nome = models.CharField(max_length=200)
     preco = models.DecimalField(max_digits=10, decimal_places=2)
     quantidade = models.PositiveIntegerField()
+
     @property
     def subtotal(self):
         return self.preco * self.quantidade
-
 
     def __str__(self):
         return f"{self.produto_nome} (x{self.quantidade})"

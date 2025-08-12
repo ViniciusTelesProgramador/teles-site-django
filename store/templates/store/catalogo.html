@@ -1,38 +1,91 @@
 {% extends 'store/base.html' %}
-{% load static %}
 {% block title %}Todos os Produtos{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 py-6">
+<div class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-  <div class="flex items-center justify-between mb-4">
-    <h1 class="text-2xl font-bold">Todos os Produtos</h1>
+  <!-- SIDEBAR DE FILTROS -->
+  <aside class="lg:col-span-3 bg-white border rounded-xl p-4 h-max">
+    <form method="get" id="filtrosForm" class="space-y-5">
 
-    <form method="get" class="flex items-center gap-2">
-      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
-      <label class="text-sm text-gray-600">Ordenar por:</label>
-      <select name="ordenar" class="form-select form-select-sm w-auto"
-              onchange="this.form.submit()">
-        <option value="-id"    {% if ordenar == '-id' %}selected{% endif %}>Mais recentes</option>
-        <option value="nome"   {% if ordenar == 'nome' %}selected{% endif %}>Nome (A–Z)</option>
-        <option value="preco"  {% if ordenar == 'preco' %}selected{% endif %}>Preço (menor)</option>
-        <option value="-preco" {% if ordenar == '-preco' %}selected{% endif %}>Preço (maior)</option>
-      </select>
+      {% if q %}
+        <input type="hidden" name="q" value="{{ q }}">
+      {% endif %}
+
+      <div>
+        <label class="block text-sm font-semibold mb-2">Ordenar por</label>
+        <select name="ordenar" class="form-select form-select-sm w-full" onchange="document.getElementById('filtrosForm').submit()">
+          <option value="-id"    {% if ordenar == '-id' %}selected{% endif %}>Mais recentes</option>
+          <option value="nome"   {% if ordenar == 'nome' %}selected{% endif %}>Nome (A–Z)</option>
+          <option value="preco"  {% if ordenar == 'preco' %}selected{% endif %}>Preço (menor)</option>
+          <option value="-preco" {% if ordenar == '-preco' %}selected{% endif %}>Preço (maior)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-2">Categorias</label>
+        <div class="space-y-1 max-h-56 overflow-auto pr-1">
+          <label class="flex items-center gap-2">
+            <input type="radio" name="categoria" value="" {% if not categoria_id %}checked{% endif %} onchange="this.form.submit()">
+            <span>Todas</span>
+          </label>
+          {% for c in categorias %}
+          <label class="flex items-center gap-2">
+            <input type="radio" name="categoria" value="{{ c.id }}" {% if categoria_id == c.id|stringformat:'s' %}checked{% endif %} onchange="this.form.submit()">
+            <span>{{ c.nome }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-2">Marcas</label>
+        <div class="space-y-1 max-h-56 overflow-auto pr-1">
+          {% for m in marcas %}
+          <label class="flex items-center gap-2">
+            <input type="checkbox" name="marca" value="{{ m.id }}" {% if m.id|stringformat:'s' in marcas_ids %}checked{% endif %} onchange="this.form.submit()">
+            <span>{{ m.nome }}</span>
+          </label>
+          {% empty %}
+          <p class="text-sm text-gray-500">Nenhuma marca disponível.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-2">Preço</label>
+        <div class="flex items-center gap-2">
+          <input type="text" inputmode="decimal" name="preco_min" value="{{ preco_min }}" placeholder="mín."
+                 class="form-control form-control-sm">
+          <span class="text-gray-400">–</span>
+          <input type="text" inputmode="decimal" name="preco_max" value="{{ preco_max }}" placeholder="máx."
+                 class="form-control form-control-sm">
+        </div>
+      </div>
+
+      <label class="flex items-center gap-2">
+        <input type="checkbox" name="oferta" value="1" {% if so_ofertas %}checked{% endif %}>
+        <span>Somente ofertas</span>
+      </label>
+
+      <div class="flex gap-2 pt-2">
+        <button type="submit" class="px-4 py-2 bg-[#1F2A85] text-white rounded-md hover:bg-[#142165]">Aplicar</button>
+        <a href="{% url 'catalogo' %}" class="px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Limpar</a>
+      </div>
     </form>
-  </div>
+  </aside>
 
-  {% if q %}
-    <p class="text-sm text-gray-600 mb-3">Buscando por: <strong>{{ q }}</strong></p>
-  {% endif %}
+  <!-- LISTA -->
+  <section class="lg:col-span-9">
+    {% if q %}
+      <p class="text-sm text-gray-600 mb-3">Buscando por: <strong>{{ q }}</strong></p>
+    {% endif %}
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-    {% for produto in page_obj.object_list %}
-      <div class="relative bg-white rounded-xl shadow-md hover:shadow-xl transition border p-4 flex flex-col justify-between
-                  {% if not produto.ativo %}opacity-50 pointer-events-none{% endif %}" data-card>
-
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% for produto in page_obj.object_list %}
+      <div class="relative bg-white rounded-xl shadow-md border p-4 flex flex-col justify-between" data-card>
         {% if user.is_authenticated %}
-        <a href="javascript:void(0);"
-           class="toggle-favorito absolute top-2 right-2 text-xl"
+        <a href="javascript:void(0);" class="toggle-favorito absolute top-2 right-2 text-xl"
            data-url="{% url 'toggle_favorito' produto.id %}">
           <i class="fa {% if produto.id in produtos_favoritados %}fa-solid fa-heart text-red-500{% else %}fa-regular fa-heart text-gray-400{% endif %}"></i>
         </a>
@@ -40,11 +93,12 @@
 
         <a href="{% url 'produto_detail' produto.id %}">
           {% if produto.imagem %}
-            <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full h-48 object-contain mb-4" />
+            <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" class="w-full h-48 object-contain mb-4">
           {% else %}
-            <img src="https://via.placeholder.com/300x200?text=Sem+Imagem" class="w-full h-48 object-contain mb-4" />
+            <img src="https://via.placeholder.com/300x200?text=Sem+Imagem" class="w-full h-48 object-contain mb-4">
           {% endif %}
-          <h2 class="text-sm font-semibold text-gray-800 leading-tight mb-1 line-clamp-2 uppercase">{{ produto.nome }}</h2>
+          <h2 class="text-sm font-semibold text-gray-800 line-clamp-2 uppercase mb-1">{{ produto.nome }}</h2>
+
           {% if produto.em_oferta and produto.preco_antigo %}
             <p class="text-xs text-gray-500 line-through">R$ {{ produto.preco_antigo }}</p>
             <p class="text-lg font-bold text-red-600">R$ {{ produto.preco_novo }}</p>
@@ -53,59 +107,40 @@
           {% endif %}
         </a>
 
-        {% if produto.ativo %}
-          <a href="{% url 'produto_detail' produto.id %}"
-             class="block w-full mt-3 bg-[#FFD400] hover:bg-yellow-300 text-black font-semibold py-2 rounded-md text-center transition">
-            Ver detalhes
-          </a>
-        {% else %}
-          <button disabled class="block w-full mt-3 bg-gray-400 text-white font-semibold py-2 rounded-md text-center">
-            Indisponível
-          </button>
-        {% endif %}
+        <a href="{% url 'produto_detail' produto.id %}"
+           class="block w-full mt-3 bg-[#FFD400] hover:bg-yellow-300 text-black font-semibold py-2 rounded-md text-center transition">
+          Ver detalhes
+        </a>
       </div>
-    {% empty %}
-      <p>Nenhum produto encontrado.</p>
-    {% endfor %}
-  </div>
+      {% empty %}
+        <p>Nenhum produto encontrado.</p>
+      {% endfor %}
+    </div>
 
-  <!-- Paginação -->
-  {% if page_obj.paginator.num_pages > 1 %}
-  <nav class="mt-8 flex justify-center">
-    <ul class="pagination">
-      {% if page_obj.has_previous %}
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if ordenar %}&ordenar={{ ordenar }}{% endif %}{% if q %}&q={{ q }}{% endif %}">
-            «
-          </a>
-        </li>
-      {% else %}
-        <li class="page-item disabled"><span class="page-link">«</span></li>
-      {% endif %}
+    <!-- Paginação -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="mt-8 flex justify-center">
+      <ul class="pagination">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?{{ query_without_page }}&page={{ page_obj.previous_page_number }}">«</a></li>
+        {% else %}<li class="page-item disabled"><span class="page-link">«</span></li>{% endif %}
 
         {% for p in page_range %}
-        {% if p == '…' %}
-          <li class="page-item disabled"><span class="page-link">…</span></li>
-        {% elif p == page_obj.number %}
-          <li class="page-item active"><span class="page-link">{{ p }}</span></li>
-        {% else %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ p }}{% if ordenar %}&ordenar={{ ordenar }}{% endif %}{% if q %}&q={{ q }}{% endif %}">{{ p }}</a>
-          </li>
-        {% endif %}
-      {% endfor %}
+          {% if p == '…' %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% elif p == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="?{{ query_without_page }}&page={{ p }}">{{ p }}</a></li>
+          {% endif %}
+        {% endfor %}
 
-      {% if page_obj.has_next %}
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if ordenar %}&ordenar={{ ordenar }}{% endif %}{% if q %}&q={{ q }}{% endif %}">
-            »
-          </a>
-        </li>
-      {% else %}
-        <li class="page-item disabled"><span class="page-link">»</span></li>
-      {% endif %}
-    </ul>
-  </nav>
-  {% endif %}
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?{{ query_without_page }}&page={{ page_obj.next_page_number }}">»</a></li>
+        {% else %}<li class="page-item disabled"><span class="page-link">»</span></li>{% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </section>
 </div>
 {% endblock %}
