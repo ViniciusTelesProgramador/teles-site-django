@@ -127,6 +127,7 @@ def remover_carrinho(request, produto_id):
     return HttpResponseRedirect(reverse('carrinho'))
 
 
+# store/views.py (trecho do checkout)
 
 @login_required
 def checkout(request):
@@ -137,17 +138,20 @@ def checkout(request):
     is_sao_luis = cep.startswith('650')
     entrega_gratis = is_sao_luis and total >= 400
 
-    # ✅ Regras para exibição dos campos
-    mostrar_lojas = not entrega_gratis  # se não ganhou entrega, obriga escolher loja
-    mostrar_endereco = entrega_gratis  # mostra campo de endereço apenas se entrega grátis
-    permitir_opcao_entrega = entrega_gratis  # mostra os radios somente para entrega grátis
+    # pega a escolha atual (se houver POST)
+    escolha = request.POST.get('opcao_entrega')
+
+    # regras de exibição
+    permitir_opcao_entrega = entrega_gratis
+    mostrar_lojas = (not entrega_gratis) or (escolha == 'retirada')          # <-- AQUI
+    mostrar_endereco = entrega_gratis and (escolha != 'retirada')            # <-- AQUI
 
     if request.method == 'POST':
         form = CheckoutForm(
             request.POST,
             mostrar_lojas=mostrar_lojas,
             mostrar_endereco=mostrar_endereco,
-            permitir_opcao_entrega=permitir_opcao_entrega
+            permitir_opcao_entrega=permitir_opcao_entrega,
         )
         if form.is_valid():
             pedido = form.save(commit=False)
@@ -157,19 +161,25 @@ def checkout(request):
             pedido.total = total
             pedido.usuario = request.user
 
-            # salva o campo opcao_entrega, se disponível
-            opcao_entrega = form.cleaned_data.get('opcao_entrega')
-            if opcao_entrega:
-                pedido.opcao_entrega = opcao_entrega  # precisa existir no model se quiser salvar
+            # salva entrega/retirada
+            pedido.opcao_entrega = form.cleaned_data.get('opcao_entrega')
+
+            # garante salvar loja quando for retirada
+            if pedido.opcao_entrega == 'retirada':
+                pedido.loja_retirada = form.cleaned_data.get('loja_retirada')
+
+            # garante salvar endereço quando for entrega
+            if pedido.opcao_entrega == 'entrega':
+                pedido.endereco = form.cleaned_data.get('endereco')
 
             pedido.save()
 
-            for produto_id, item in carrinho.items():
+            for _, item in carrinho.items():
                 PedidoItem.objects.create(
                     pedido=pedido,
                     produto_nome=item['nome'],
                     preco=item['preco'],
-                    quantidade=item['quantidade']
+                    quantidade=item['quantidade'],
                 )
 
             request.session['carrinho'] = {}
@@ -186,8 +196,8 @@ def checkout(request):
                 'cep': cep
             }
         )
-    request.session['total'] = total
 
+    request.session['total'] = total
     return render(request, 'store/checkout.html', {
         'form': form,
         'carrinho': carrinho,
@@ -196,6 +206,7 @@ def checkout(request):
         'mostrar_lojas': mostrar_lojas,
         'mostrar_endereco': mostrar_endereco,
     })
+
 
 
 def atualizar_carrinho(request):
@@ -924,13 +935,27 @@ def _qr_base64(texto: str) -> str:
     img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
+from django.shortcuts import render, get_object_or_404
+from .models import Pedido, gerar_codigo_unico
+
 def pagamento_sucesso(request):
-    """
-    Você já redireciona pra cá com ?pedido=<id>.
-    Só adiciono o botão pro comprovante.
-    """
-    pedido_id = request.GET.get("pedido")
-    return render(request, "store/pagamento_sucesso.html", {"pedido_id": pedido_id})
+    pedido_id = request.GET.get("pedido") or request.session.get("ultimo_pedido_id")
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+
+    if not pedido.codigo_confirmacao:
+        pedido.codigo_confirmacao = gerar_codigo_unico()
+        pedido.save(update_fields=["codigo_confirmacao"])
+
+    request.session.pop("carrinho", None)
+    request.session.modified = True
+
+    # 👇 adiciona pedido_id no contexto
+    return render(
+        request,
+        "store/pagamento_sucesso.html",
+        {"pedido": pedido, "pedido_id": pedido.id},
+    )
+
 
 @login_required
 def comprovante_pedido(request, pk):
@@ -950,7 +975,7 @@ def comprovante_pedido(request, pk):
             "email": "contato@teles.com.br",
         },
         "qr_b64": qr_b64,
-        "agora": timezone.now(),
+        "agora": timezone.localtime(),
     }
     return render(request, "store/comprovante_pedido.html", ctx)
 
@@ -971,7 +996,7 @@ def comprovante_pedido_pdf(request, pk):
             "email": "contato@teles.com.br",
         },
         "qr_b64": qr_b64,
-        "agora": timezone.now(),
+        "agora": timezone.localtime(),
         "pdf": True,   # dá pra ajustar CSS no template quando for PDF
     }
 

@@ -1,67 +1,78 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <title>Comprovante do Pedido #{{ pedido.id }}</title>
-  <style>
-    body{font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#222; }
-    .wrap{max-width: 800px; margin: 0 auto;}
-    h1{font-size:18px; margin:0 0 10px;}
-    .muted{color:#666;}
-    .box{border:1px solid #e0e0e0; border-radius:8px; padding:14px; margin:10px 0;}
-    table{width:100%; border-collapse: collapse;}
-    th,td{padding:8px; border-bottom:1px solid #eee;}
-    th{text-align:left;}
-    tfoot td{font-weight:bold;}
-    .right{text-align:right;}
-    .mono{font-family: Consolas, monospace;}
-  </style>
-</head>
-<body>
-<div class="wrap">
-  <h1>Comprovante do Pedido #{{ pedido.id }}</h1>
-  <p class="muted">Emitido em {{ pedido.criado_em|date:"d/m/Y H:i" }}</p>
+{% extends 'store/base.html' %}
+{% load static %}
+{% block title %}Comprovante do Pedido #{{ pedido.id }}{% endblock %}
 
-  <div class="box">
+{% block content %}
+<div class="max-w-4xl mx-auto py-8">
+
+  <h1 class="text-2xl font-bold mb-4">Comprovante do Pedido #{{ pedido.id }}</h1>
+  <p class="text-sm text-gray-500">Emitido em {{ agora|date:"d/m/Y H:i" }}</p>
+
+  <div class="bg-white border rounded-xl p-4 mt-4">
     <p><strong>Cliente:</strong> {{ pedido.nome }} — {{ pedido.email }}</p>
-    {% if pedido.opcao_entrega == "retirada" %}
-      <p><strong>Retirada na loja:</strong> {{ pedido.loja_retirada|default:"-" }}</p>
-      <p><strong>Código de retirada:</strong> <span class="mono">{{ pedido.codigo_confirmacao }}</span></p>
-    {% else %}
-      <p><strong>Entrega:</strong> {{ pedido.endereco }} — CEP {{ pedido.cep }}</p>
-    {% endif %}
-    <p><strong>Status do pagamento:</strong> {{ pedido.get_status_display }}
-       {% if pedido.mp_payment_id %}(Transação: {{ pedido.mp_payment_id }}){% endif %}
+    <p><strong>Entrega:</strong>
+      {% if pedido.opcao_entrega == "entrega" %}
+        {{ pedido.endereco|default:"—" }} (CEP {{ pedido.cep|default:"—" }})
+      {% else %}
+        Retirada em loja: {{ pedido.loja_retirada|default:"-" }}
+      {% endif %}
+    </p>
+    <p><strong>Status do pagamento:</strong>
+      {{ pedido.status|capfirst }}
+      {% if pedido.mp_payment_id %} (Transação: {{ pedido.mp_payment_id }}){% endif %}
     </p>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Item</th><th class="right">Qtd</th><th class="right">Preço</th><th class="right">Subtotal</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in pedido.itens.all %}
-      <tr>
-        <td>{{ item.produto_nome }}</td>
-        <td class="right">{{ item.quantidade }}</td>
-        <td class="right">R$ {{ item.preco }}</td>
-        <td class="right">R$ {{ item.subtotal }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-      <tr>
-        <td colspan="3" class="right">Total</td>
-        <td class="right">R$ {{ pedido.total }}</td>
-      </tr>
-    </tfoot>
-  </table>
+  {# Mostra código/QR apenas quando houver (e geralmente só faz sentido pra retirada) #}
+  {% if pedido.codigo_confirmacao %}
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4 flex items-center gap-6">
+    <div>
+      <p class="text-sm text-blue-700">Código de retirada</p>
+      <p class="text-2xl font-mono font-bold">{{ pedido.codigo_confirmacao }}</p>
+      <p class="text-xs text-blue-600 mt-1">Apresente este código na hora da retirada.</p>
+    </div>
+    {% if qr_b64 %}
+      <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR code"
+           class="w-28 h-28 border border-blue-200 rounded-md bg-white" />
+    {% endif %}
+  </div>
+  {% endif %}
 
-  <p class="muted" style="margin-top:10px">
-    Guarde este comprovante. Em caso de retirada, apresente o <strong>código de retirada</strong>.
+  <div class="mt-6 overflow-x-auto bg-white border rounded-xl">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="text-left p-3">Item</th>
+          <th class="text-right p-3">Qtd</th>
+          <th class="text-right p-3">Preço</th>
+          <th class="text-right p-3">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pedido.itens.all %}
+        <tr class="border-t">
+          <td class="p-3">{{ item.produto_nome }}</td>
+          <td class="p-3 text-right">{{ item.quantidade }}</td>
+          <td class="p-3 text-right">R$ {{ item.preco }}</td>
+          <td class="p-3 text-right">R$ {{ item.subtotal }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="border-t font-semibold">
+          <td class="p-3" colspan="3">Total</td>
+          <td class="p-3 text-right">R$ {{ pedido.total }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-xs text-gray-500 mt-4">
+    Guarde este comprovante. Em caso de retirada, apresente o código acima.
   </p>
+
+  <div class="mt-6 flex gap-3">
+    <a class="px-4 py-2 rounded bg-green-600 text-white"
+       href="{% url 'comprovante_pedido_pdf' pedido.id %}">Baixar PDF</a>
+    <a class="px-4 py-2 rounded bg-gray-200" href="{% url 'home' %}">Voltar para a loja</a>
+  </div>
 </div>
-</body>
-</html>
+{% endblock %}
