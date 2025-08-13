@@ -183,3 +183,9 @@ MIDDLEWARE += ['axes.middleware.AxesMiddleware']
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1  # horas bloqueado após limite
 
+# Autenticação
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    # Se for usar django-axes, descomente a linha abaixo e configure-o de fato:
+    # "axes.backends.AxesStandaloneBackend",
+]

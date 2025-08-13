@@ -34,6 +34,10 @@ urlpatterns = [
     path('favoritos/', views.favoritos_view, name='favoritos'),
     path('produtos/', views.catalogo, name='catalogo'),
     path("webhooks/mercadopago/", views.mp_webhook, name="mp_webhook"),
+    path("conta/reenviar-ativacao/", views.reenviar_ativacao, name="reenviar_ativacao"),
+    path("conta/ativar/<uidb64>/<token>/", views.ativar_conta, name="ativar_conta"),
+    path("pedido/<int:pk>/comprovante/", views.comprovante_pedido, name="comprovante_pedido"),
+    path("pedido/<int:pk>/comprovante/pdf/", views.comprovante_pedido_pdf, name="comprovante_pedido_pdf"),
     
 ]
 

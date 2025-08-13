@@ -32,6 +32,10 @@ from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import redirect, render
 from .models import Pedido, PedidoItem
+from urllib.parse import quote as urlquote
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 
 
 
@@ -317,92 +321,170 @@ def home(request):
         'categorias': categorias
     })
 
-def login_view(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        senha = request.POST.get('password')
 
-        try:
-            user_obj = User.objects.get(email=email)
-            user = authenticate(request, username=user_obj.username, password=senha)
-        except User.DoesNotExist:
-            user = None
+
+import requests
+
+from .models import Profile
+from .utils import send_activation_email  # use o helper que você já tem
+
+User = get_user_model()
+
+
+def login_view(request):
+    if request.method == "POST":
+        login_input = (request.POST.get("email") or "").strip()  # pode ser e-mail OU username
+        senha = request.POST.get("password") or ""
+
+        # 1) tenta achar por e-mail (case-insensitive)
+        user_obj = User.objects.filter(email__iexact=login_input).first()
+        # 2) se não achar, tenta como username
+        if not user_obj:
+            user_obj = User.objects.filter(username__iexact=login_input).first()
+
+        if not user_obj:
+            messages.error(request, "E-mail/usuário ou senha inválidos.")
+            return render(request, "store/login.html")
+
+        # autentica usando o username real do usuário encontrado
+        user = authenticate(request, username=user_obj.username, password=senha)
 
         if user is not None:
             login(request, user)
-            messages.success(request, 'Login realizado com sucesso.')
-            return redirect('home')
+            messages.success(request, "Login realizado com sucesso.")
+            next_url = request.GET.get("next") or reverse("home")
+            return redirect(next_url)
+
+        # se a senha está certa mas a conta está inativa, avise e ofereça reenvio de e-mail
+        if user_obj.check_password(senha) and not user_obj.is_active:
+            link = f'{reverse("reenviar_ativacao")}?email={urlquote(user_obj.email)}'
+            messages.error(
+                request,
+                mark_safe(
+                    f'Sua conta ainda não foi ativada. '
+                    f'<a href="{link}" class="underline text-blue-600">Reenviar e-mail de ativação</a>.'
+                ),
+            )
         else:
-            messages.error(request, 'E-mail ou senha inválidos.')
+            messages.error(request, "E-mail/usuário ou senha inválidos.")
 
-    return render(request, 'store/login.html')
-
+    return render(request, "store/login.html")
 
 
 def logout_view(request):
     logout(request)
-    messages.info(request, 'Você saiu da sua conta.')
-    return redirect('home')
+    messages.info(request, "Você saiu da sua conta.")
+    return redirect("home")
 
 
 def register_view(request):
-    if request.method == 'POST':
-        # 1. Verificação do reCAPTCHA v2
-        token = request.POST.get('g-recaptcha-response')
+    if request.method == "POST":
+        # 1) reCAPTCHA
+        token = request.POST.get("g-recaptcha-response")
         recaptcha_response = requests.post(
-            'https://www.google.com/recaptcha/api/siteverify',
-            data={
-                'secret': settings.RECAPTCHA_SECRET_KEY,
-                'response': token
-            }
+            "https://www.google.com/recaptcha/api/siteverify",
+            data={"secret": settings.RECAPTCHA_SECRET_KEY, "response": token},
+            timeout=10,
         )
         result = recaptcha_response.json()
-        if not result.get('success'):
-            messages.error(request, 'Erro na verificação do reCAPTCHA.')
-            return redirect('register')
+        if not result.get("success"):
+            messages.error(request, "Erro na verificação do reCAPTCHA.")
+            return redirect("register")
 
-        # 2. Dados do formulário
-        username = request.POST.get('email')
-        email = request.POST.get('email')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        cep = request.POST.get('cep')
-        senha = request.POST.get('password')
-        senha2 = request.POST.get('password2')
+        # 2) dados
+        email = (request.POST.get("email") or "").strip()
+        username = email  # seu sistema usa email como username
+        first_name = request.POST.get("first_name") or ""
+        last_name = request.POST.get("last_name") or ""
+        cep = request.POST.get("cep") or ""
+        senha = request.POST.get("password") or ""
+        senha2 = request.POST.get("password2") or ""
 
-        # 3. Validações
+        # 3) validações
         if senha != senha2:
-            messages.error(request, 'As senhas não coincidem.')
-        elif len(senha) < 8 or not any(c.isupper() for c in senha) or not any(c.isdigit() for c in senha):
-            messages.error(request, 'A senha deve ter pelo menos 8 caracteres, uma letra maiúscula e um número.')
-        elif User.objects.filter(username=username).exists():
-            messages.error(request, 'E-mail já cadastrado.')
-        else:
-            # 4. Criação do usuário (inativo) e perfil
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=senha,
-                first_name=first_name,
-                last_name=last_name
-            )
-            user.is_active = False  # desativa até a confirmação
+            messages.error(request, "As senhas não coincidem.")
+            return redirect("register")
+
+        if len(senha) < 8 or not any(c.isupper() for c in senha) or not any(c.isdigit() for c in senha):
+            messages.error(request, "A senha deve ter pelo menos 8 caracteres, uma letra maiúscula e um número.")
+            return redirect("register")
+
+        # Checa duplicidade de e-mail e username
+        if User.objects.filter(username__iexact=username).exists():
+            messages.error(request, "Já existe uma conta com este e-mail.")
+            return redirect("register")
+        if User.objects.filter(email__iexact=email).exists():
+            messages.error(request, "Já existe uma conta com este e-mail.")
+            return redirect("register")
+
+        # 4) cria usuário inativo + profile
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=senha,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        user.is_active = False
+        user.save()
+
+        profile, _ = Profile.objects.get_or_create(user=user)
+        profile.cep = cep
+        profile.save()
+
+        # 5) envia e-mail de ativação
+        send_activation_email(request, user)
+
+        messages.success(request, "Cadastro realizado! Verifique seu e-mail para ativar sua conta.")
+        return redirect("login")
+
+    # GET
+    return render(request, "store/register.html", {"recaptcha_site_key": settings.RECAPTCHA_SITE_KEY})
+
+
+def reenviar_ativacao(request):
+    """
+    Reenvia o e-mail de ativação se o usuário existir e estiver inativo.
+    URL: /conta/reenviar-ativacao/?email=<email>
+    """
+    email = (request.GET.get("email") or "").strip()
+    user = User.objects.filter(email__iexact=email).first()
+
+    if user and not user.is_active:
+        send_activation_email(request, user)
+        messages.success(request, "Reenviamos o e-mail de ativação. Confira sua caixa de entrada.")
+    else:
+        messages.info(request, "Se houver uma conta inativa para esse e-mail, enviaremos um novo e-mail.")
+
+    return redirect("login")
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from django.contrib import messages
+from django.shortcuts import redirect
+
+User = get_user_model()
+
+def ativar_conta(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except Exception:
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        if not user.is_active:
+            user.is_active = True
             user.save()
-
-            profile, created = Profile.objects.get_or_create(user=user)
-            profile.cep = cep
-            profile.save()
-
-            # 5. Envia o e-mail de ativação
-            send_activation_email(request, user)
-
-            messages.success(request, 'Cadastro realizado! Verifique seu e-mail para ativar sua conta.')
-            return redirect('login')
-
-    # GET request
-    return render(request, 'store/register.html', {
-        'recaptcha_site_key': settings.RECAPTCHA_SITE_KEY
-    })
+            messages.success(request, "Conta ativada com sucesso! Já pode fazer login.")
+        else:
+            messages.info(request, "Sua conta já estava ativada.")
+        return redirect("login")
+    else:
+        messages.error(request, "Link de ativação inválido ou expirado.")
+        return redirect("register")
 
 
 
@@ -569,9 +651,29 @@ def checkout_mercado_pago(request):
     return redirect(pref["init_point"])
 
     
+from django.shortcuts import get_object_or_404
+
 def pagamento_sucesso(request):
     pedido_id = request.GET.get("pedido")
+    status_mp = request.GET.get("status")  # o MP manda ?status=approved na volta
+
+    # (opcional) confirme no banco — o webhook deve ter atualizado para "pago"
+    pedido = None
+    if pedido_id:
+        try:
+            pedido = get_object_or_404(Pedido, id=pedido_id, usuario=request.user)
+        except Exception:
+            pedido = None
+
+    # Critérios para esvaziar o carrinho:
+    # - status da URL == approved (cartão) OU
+    # - o pedido já está "pago" (webhook confirmou)
+    if (status_mp == "approved") or (pedido and pedido.status == "pago"):
+        request.session.pop("carrinho", None)
+        request.session.modified = True  # garante que a sessão seja salva
+
     return render(request, "store/pagamento_sucesso.html", {"pedido_id": pedido_id})
+
 
 def pagamento_erro(request):
     return render(request, "store/pagamento_erro.html")
@@ -800,3 +902,81 @@ def catalogo(request):
         'query_without_page': query_without_page,
         'produtos_favoritados': fav_ids,
     })
+
+    # store/views.py
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+
+from xhtml2pdf import pisa
+import io, base64
+from io import BytesIO
+import qrcode
+
+from .models import Pedido
+
+def _qr_base64(texto: str) -> str:
+    """Gera imagem PNG em base64 para embutir no HTML/PDF."""
+    img = qrcode.make(texto)
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("ascii")
+
+def pagamento_sucesso(request):
+    """
+    Você já redireciona pra cá com ?pedido=<id>.
+    Só adiciono o botão pro comprovante.
+    """
+    pedido_id = request.GET.get("pedido")
+    return render(request, "store/pagamento_sucesso.html", {"pedido_id": pedido_id})
+
+@login_required
+def comprovante_pedido(request, pk):
+    pedido = get_object_or_404(Pedido, pk=pk)
+    # (opcional) restringir a ver o próprio pedido:
+    if pedido.usuario and pedido.usuario != request.user and not request.user.is_staff:
+        return redirect("home")
+
+    qr_b64 = _qr_base64(pedido.codigo_confirmacao or f"PED-{pedido.id}")
+    ctx = {
+        "pedido": pedido,
+        "empresa": {
+            "nome": "Teles Construções",
+            "cnpj": "00.464.497/0001-07",
+            "endereco": "Av. Guaxenduba, 1506 - São Luís - MA",
+            "telefone": "(98) 0000-0000",
+            "email": "contato@teles.com.br",
+        },
+        "qr_b64": qr_b64,
+        "agora": timezone.now(),
+    }
+    return render(request, "store/comprovante_pedido.html", ctx)
+
+@login_required
+def comprovante_pedido_pdf(request, pk):
+    pedido = get_object_or_404(Pedido, pk=pk)
+    if pedido.usuario and pedido.usuario != request.user and not request.user.is_staff:
+        return redirect("home")
+
+    qr_b64 = _qr_base64(pedido.codigo_confirmacao or f"PED-{pedido.id}")
+    ctx = {
+        "pedido": pedido,
+        "empresa": {
+            "nome": "Teles Construções",
+            "cnpj": "00.464.497/0001-07",
+            "endereco": "Av. Guaxenduba, 1506 - São Luís - MA",
+            "telefone": "(98) 0000-0000",
+            "email": "contato@teles.com.br",
+        },
+        "qr_b64": qr_b64,
+        "agora": timezone.now(),
+        "pdf": True,   # dá pra ajustar CSS no template quando for PDF
+    }
+
+    html = render_to_string("store/comprovante_pedido_pdf.html", ctx)
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="comprovante_pedido_{pedido.id}.pdf"'
+    pisa.CreatePDF(io.BytesIO(html.encode("utf-8")), dest=response, encoding="utf-8")
+    return response

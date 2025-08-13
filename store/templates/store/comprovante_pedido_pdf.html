@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Comprovante do Pedido #{{ pedido.id }}</title>
+  <style>
+    body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111; }
+    .nota { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:18px; }
+    .nota h2 { font-size:18px; margin:0 0 6px; }
+    .meta { color:#6b7280; font-size:11px; margin-bottom:10px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { border-bottom:1px solid #e5e7eb; padding:8px; text-align:left; }
+    th { font-size:12px; }
+    .total { font-weight:bold; }
+    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .info { font-size: 12px; }
+    .rodape { margin-top:18px; font-size:11px; color:#6b7280; }
+    .cod { font-weight:bold; font-size:14px; }
+  </style>
+</head>
+<body>
+  <h2>Comprovante do Pedido #{{ pedido.id }}</h2>
+  <div class="meta">Emitido em {{ pedido.criado_em|date:"d/m/Y H:i" }}</div>
+
+  <div class="nota">
+    <div class="grid-2">
+      <div class="info">
+        <strong>Cliente:</strong> {{ pedido.nome }} — {{ pedido.email }}<br>
+        <strong>Entrega:</strong>
+        {% if pedido.opcao_entrega == "entrega" %}
+          {{ pedido.endereco }} — CEP {{ pedido.cep|default:"-" }}
+        {% else %}
+          Retirada em loja: {{ pedido.loja_retirada|default:"-" }}
+        {% endif %}
+      </div>
+      <div class="info" style="text-align:right">
+        <strong>Status do pagamento:</strong>
+        {{ pedido.get_status_display }}<br>
+        {% if pedido.mp_payment_id %}Transação: {{ pedido.mp_payment_id }}{% endif %}
+        {% if pedido.codigo_confirmacao %}
+          <div class="cod">Código de retirada: {{ pedido.codigo_confirmacao }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th><th>Qtd</th><th>Preço</th><th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pedido.itens.all %}
+          <tr>
+            <td>{{ item.produto_nome }}</td>
+            <td>{{ item.quantidade }}</td>
+            <td>R$ {{ item.preco }}</td>
+            <td>R$ {{ item.subtotal }}</td>
+          </tr>
+        {% endfor %}
+        <tr class="total">
+          <td colspan="3" style="text-align:right">Total</td>
+          <td>R$ {{ pedido.total }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="rodape">
+      Guarde este comprovante. Em caso de retirada, apresente o código acima.
+    </div>
+  </div>
+</body>
+</html>

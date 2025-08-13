@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Comprovante do Pedido #{{ pedido.id }}</title>
+  <style>
+    body{font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#222; }
+    .wrap{max-width: 800px; margin: 0 auto;}
+    h1{font-size:18px; margin:0 0 10px;}
+    .muted{color:#666;}
+    .box{border:1px solid #e0e0e0; border-radius:8px; padding:14px; margin:10px 0;}
+    table{width:100%; border-collapse: collapse;}
+    th,td{padding:8px; border-bottom:1px solid #eee;}
+    th{text-align:left;}
+    tfoot td{font-weight:bold;}
+    .right{text-align:right;}
+    .mono{font-family: Consolas, monospace;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Comprovante do Pedido #{{ pedido.id }}</h1>
+  <p class="muted">Emitido em {{ pedido.criado_em|date:"d/m/Y H:i" }}</p>
+
+  <div class="box">
+    <p><strong>Cliente:</strong> {{ pedido.nome }} — {{ pedido.email }}</p>
+    {% if pedido.opcao_entrega == "retirada" %}
+      <p><strong>Retirada na loja:</strong> {{ pedido.loja_retirada|default:"-" }}</p>
+      <p><strong>Código de retirada:</strong> <span class="mono">{{ pedido.codigo_confirmacao }}</span></p>
+    {% else %}
+      <p><strong>Entrega:</strong> {{ pedido.endereco }} — CEP {{ pedido.cep }}</p>
+    {% endif %}
+    <p><strong>Status do pagamento:</strong> {{ pedido.get_status_display }}
+       {% if pedido.mp_payment_id %}(Transação: {{ pedido.mp_payment_id }}){% endif %}
+    </p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th><th class="right">Qtd</th><th class="right">Preço</th><th class="right">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in pedido.itens.all %}
+      <tr>
+        <td>{{ item.produto_nome }}</td>
+        <td class="right">{{ item.quantidade }}</td>
+        <td class="right">R$ {{ item.preco }}</td>
+        <td class="right">R$ {{ item.subtotal }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" class="right">Total</td>
+        <td class="right">R$ {{ pedido.total }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <p class="muted" style="margin-top:10px">
+    Guarde este comprovante. Em caso de retirada, apresente o <strong>código de retirada</strong>.
+  </p>
+</div>
+</body>
+</html>
