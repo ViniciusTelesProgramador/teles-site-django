@@ -65,6 +65,10 @@ class ImagemProduto(models.Model):
 # =========================
 # Pedido
 # =========================
+from django.db import models
+from django.contrib.auth.models import User
+from .models import gerar_codigo_unico  # se gerar_codigo_unico estiver no mesmo arquivo, ignore este import
+
 class Pedido(models.Model):
     STATUS = [
         ("aguardando", "Aguardando pagamento"),
@@ -76,19 +80,31 @@ class Pedido(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     nome = models.CharField(max_length=100)
     email = models.EmailField()
-    endereco = models.TextField()
+
+    # ---- ENDEREÇO (LEGADO, OPCIONAL) ----
+    # Mantido para compatibilidade com registros antigos. O fluxo novo usa os campos detalhados abaixo.
+    endereco = models.TextField(blank=True, null=True)
+
     cep = models.CharField(max_length=10, blank=True, null=True)
+
+    # ---- ENDEREÇO DETALHADO (NOVO) ----
+    rua = models.CharField(max_length=150, blank=True, default="")
+    numero = models.CharField(max_length=20, blank=True, default="")
+    bairro = models.CharField(max_length=100, blank=True, default="")
+    ponto_referencia = models.CharField(max_length=200, blank=True, default="")
+    telefone_contato = models.CharField(max_length=20, blank=True, default="")
 
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 
     total = models.DecimalField(max_digits=10, decimal_places=2)
 
-    loja_retirada = models.CharField(max_length=100, blank=True, null=True)
+    loja_retirada = models.CharField(max_length=150, blank=True, null=True)
     opcao_entrega = models.CharField(
         max_length=10,
         choices=[("entrega", "Entrega"), ("retirada", "Retirada")],
-        blank=True, null=True
+        blank=True,
+        null=True,
     )
 
     # Integração MP
@@ -96,7 +112,7 @@ class Pedido(models.Model):
     external_reference = models.CharField(max_length=64, unique=True, blank=True, null=True)
     mp_payment_id = models.CharField(max_length=64, blank=True, null=True)
 
-    # Código de confirmação para retirada/entrega + timestamp de confirmação
+    # Código de confirmação + timestamp
     codigo_confirmacao = models.CharField(
         max_length=12,
         unique=True,
@@ -120,6 +136,7 @@ class PedidoItem(models.Model):
 
     def __str__(self):
         return f"{self.produto_nome} (x{self.quantidade})"
+
 
 
 # =========================

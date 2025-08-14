@@ -4,42 +4,76 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 py-8">
-  <h1 class="text-2xl font-bold mb-6"> Minha Conta</h1>
+  <h1 class="text-2xl font-bold mb-6">Minha Conta</h1>
 
+  <!-- Dados pessoais -->
   <div class="bg-white p-6 rounded shadow mb-6">
     <h2 class="text-lg font-semibold mb-2">Dados Pessoais</h2>
     <p><strong>Nome:</strong> {{ request.user.first_name }} {{ request.user.last_name }}</p>
     <p><strong>E-mail:</strong> {{ request.user.email }}</p>
     <p><strong>CEP:</strong> {{ request.user.profile.cep }}</p>
-    <a href="{% url 'editar_perfil' %}" class="text-blue-600 hover:underline text-sm mt-2 inline-block">Editar meus dados</a>
+    <a href="{% url 'editar_perfil' %}" class="text-blue-600 hover:underline text-sm mt-2 inline-block">
+      Editar meus dados
+    </a>
   </div>
 
+  <!-- Pedidos -->
   <div class="bg-white p-6 rounded shadow">
-    <h2 class="text-lg font-semibold mb-4"> Meus Pedidos</h2>
+    <h2 class="text-lg font-semibold mb-4">Meus Pedidos</h2>
 
     {% for pedido in pedidos %}
       <div class="mb-6 border border-gray-200 p-4 rounded">
-        <p><strong>ID:</strong> {{ pedido.id }}</p>
-        <p><strong>Data:</strong> {{ pedido.criado_em|date:"d/m/Y H:i" }}</p>
-        <p><strong>Total:</strong> R$ {{ pedido.total }}</p>
+        <div class="flex flex-wrap gap-3 items-center">
+          <p><strong>ID:</strong> {{ pedido.id }}</p>
+          <p><strong>Data:</strong> {{ pedido.criado_em|date:"d/m/Y H:i" }}</p>
+          <p><strong>Total:</strong> R$ {{ pedido.total|floatformat:2 }}</p>
+        </div>
+
+        <p class="text-sm text-gray-600 mt-1">
+          <strong>Status:</strong> {{ pedido.status|capfirst }}
+          {% if pedido.opcao_entrega == "retirada" and pedido.loja_retirada %}
+            • <strong>Retirada na:</strong> {{ pedido.loja_retirada }}
+          {% elif pedido.opcao_entrega == "entrega" and pedido.endereco %}
+            • <strong>Entrega:</strong> {{ pedido.endereco }}
+          {% endif %}
+        </p>
 
         {% if pedido.itens.all %}
-          <p class="mt-2 font-semibold">Produtos:</p>
+          <p class="mt-3 font-semibold">Produtos:</p>
           <ul class="list-disc ml-5 text-sm">
             {% for item in pedido.itens.all %}
               <li>
-                {{ item.produto_nome }} – {{ item.quantidade }}x 
-                (R$ {{ item.preco|floatformat:2 }} cada) – 
+                {{ item.produto_nome }} – {{ item.quantidade }}x
+                (R$ {{ item.preco|floatformat:2 }} cada) –
                 <strong>Total:</strong> R$ {{ item.subtotal|floatformat:2 }}
-                </li>
+              </li>
             {% endfor %}
           </ul>
         {% endif %}
+
+        <!-- Ações: Ver comprovante / Baixar PDF -->
+        <div class="mt-3 flex flex-wrap gap-2 items-center">
+          <a href="{% url 'comprovante_pedido' pedido.id %}"
+             class="inline-flex items-center px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">
+            Ver comprovante
+          </a>
+
+          <a href="{% url 'comprovante_pedido_pdf' pedido.id %}"
+             class="inline-flex items-center px-3 py-1.5 rounded bg-green-600 text-white text-sm hover:bg-green-700">
+            Baixar PDF
+          </a>
+
+          {% if pedido.codigo_confirmacao %}
+            <span class="ml-auto text-xs text-gray-600">
+              código de retirada:
+              <span class="font-mono font-semibold">{{ pedido.codigo_confirmacao }}</span>
+            </span>
+          {% endif %}
+        </div>
       </div>
     {% empty %}
       <p>Você ainda não realizou nenhum pedido.</p>
     {% endfor %}
   </div>
 </div>
-
 {% endblock %}

@@ -40,26 +40,51 @@
       {{ form.cep }}
     </div>
 
-    {% if form.opcao_entrega %}
-      <div>
-        <label class="block font-semibold mb-1">Como deseja receber:</label>
-        {{ form.opcao_entrega }}
-      </div>
-    {% endif %}
+{% if form.opcao_entrega %}
+  <div>
+    <label class="block font-semibold mb-1">Como deseja receber:</label>
+    {{ form.opcao_entrega }}
+  </div>
+{% endif %}
 
-    {% if form.endereco %}
-      <div id="endereco-campo">
-        <label class="block font-semibold">Endereço (opcional):</label>
-        {{ form.endereco }}
-      </div>
-    {% endif %}
+{# retirada #}
+{% if form.loja_retirada %}
+  <div id="loja-retirada-campo" style="display:none">
+    <label class="block font-semibold">{{ form.loja_retirada.label }}</label>
+    {{ form.loja_retirada }}
+    {% for err in form.loja_retirada.errors %}<p class="text-red-600 text-sm">{{ err }}</p>{% endfor %}
+  </div>
+{% endif %}
 
-    {% if form.loja_retirada %}
-      <div id="loja-retirada-campo">
-        <label class="block font-semibold">{{ form.loja_retirada.label }}</label>
-        {{ form.loja_retirada }}
-      </div>
-    {% endif %}
+{# ENTREGA: endereço detalhado #}
+<div id="bloco-endereco" class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display:none">
+  <div>
+    <label class="block font-semibold" for="{{ form.rua.id_for_label }}">Rua</label>
+    {{ form.rua }}
+    {% for err in form.rua.errors %}<p class="text-red-600 text-sm">{{ err }}</p>{% endfor %}
+  </div>
+  <div>
+    <label class="block font-semibold" for="{{ form.numero.id_for_label }}">Número</label>
+    {{ form.numero }}
+    {% for err in form.numero.errors %}<p class="text-red-600 text-sm">{{ err }}</p>{% endfor %}
+  </div>
+  <div>
+    <label class="block font-semibold" for="{{ form.bairro.id_for_label }}">Bairro</label>
+    {{ form.bairro }}
+    {% for err in form.bairro.errors %}<p class="text-red-600 text-sm">{{ err }}</p>{% endfor %}
+  </div>
+  <div>
+    <label class="block font-semibold" for="{{ form.telefone_contato.id_for_label }}">Telefone para contato</label>
+    {{ form.telefone_contato }}
+    {% for err in form.telefone_contato.errors %}<p class="text-red-600 text-sm">{{ err }}</p>{% endfor %}
+  </div>
+  <div class="md:col-span-2">
+    <label class="block font-semibold" for="{{ form.ponto_referencia.id_for_label }}">Ponto de referência</label>
+    {{ form.ponto_referencia }}
+    {% for err in form.ponto_referencia.errors %}<p class="text-red-600 text-sm">{{ err }}</p>{% endfor %}
+  </div>
+</div>
+
 
     <div class="flex gap-4 mt-6">
       <a href="{% url 'carrinho' %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
@@ -82,26 +107,21 @@
 <!-- Scripts para mostrar/esconder campos -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    const opcaoEntregaRadios = document.querySelectorAll('input[name="opcao_entrega"]');
-    const enderecoCampo = document.getElementById('endereco-campo');
-    const lojaRetiradaCampo = document.getElementById('loja-retirada-campo');
+    const radios = document.querySelectorAll('input[name="opcao_entrega"]');
+    const blocoEndereco = document.getElementById('bloco-endereco');
+    const campoLoja = document.getElementById('loja-retirada-campo');
 
-    function atualizarCamposEntrega() {
-      const selecionado = document.querySelector('input[name="opcao_entrega"]:checked');
-
-      if (!selecionado) return;
-
-      const isEntrega = selecionado.value === 'entrega';
-      const isRetirada = selecionado.value === 'retirada';
-
-      if (enderecoCampo) enderecoCampo.style.display = isEntrega ? 'block' : 'none';
-      if (lojaRetiradaCampo) lojaRetiradaCampo.style.display = isRetirada ? 'block' : 'none';
+    function atualiza() {
+      const r = document.querySelector('input[name="opcao_entrega"]:checked');
+      if (!r) return;
+      const isEntrega = r.value === 'entrega';
+      const isRetirada = r.value === 'retirada';
+      if (blocoEndereco) blocoEndereco.style.display = isEntrega ? 'grid' : 'none';
+      if (campoLoja) campoLoja.style.display = isRetirada ? 'block' : 'none';
     }
-
-    atualizarCamposEntrega(); // Estado inicial
-    opcaoEntregaRadios.forEach(radio => {
-      radio.addEventListener('change', atualizarCamposEntrega);
-    });
+    atualiza();
+    radios.forEach(el => el.addEventListener('change', atualiza));
   });
 </script>
+
 {% endblock %}
