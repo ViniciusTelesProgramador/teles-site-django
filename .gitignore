@@ -1,0 +1,26 @@
+# Django
+db.sqlite3
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+
+# Ambiente virtual
+venv/
+env/
+.env
+
+# Arquivos de mídia (uploads)
+media/
+
+# Arquivos estáticos coletados
+staticfiles/
+
+# IDEs
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
