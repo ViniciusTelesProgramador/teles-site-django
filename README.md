@@ -106,6 +106,28 @@ Você pode modificar o settings.py para usar outro banco, como PostgreSQL.
 
 
 
+## 🏗️ Sobre o Projeto
 
+Este e-commerce foi desenvolvido para uso real na **Teles Construções**, loja de materiais de construção em São Luís, MA.
+
+**Problemas que o sistema resolve:**
+- Catálogo de produtos acessível online para clientes
+- Gestão de estoque e produtos via painel administrativo
+- Registro e acompanhamento de pedidos
+- Redução de atendimentos manuais por telefone
+
+**O que aprendi construindo isso:**
+- Arquitetura de aplicações Django em produção
+- Integração de Tailwind CSS com templates Django
+- Gestão de arquivos de mídia e estáticos
+- Deploy e configuração de ambiente real
+
+---
+
+## 👨‍💻 Autor
+
+**Marcos Teles** — AI Automation Developer  
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/marcos-vinicius-teles-b57a1b272/)
+[![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:developer.teles@gmail.com)
 
 
